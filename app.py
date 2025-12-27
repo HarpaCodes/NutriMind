@@ -310,7 +310,7 @@ def analyze_food_with_gemini(food_input, image=None):
     
     # ⭐⭐⭐ GET YOUR API KEY FROM: https://makersuite.google.com/app/apikey ⭐⭐⭐
     # ⭐⭐⭐ REPLACE THIS WITH YOUR ACTUAL API KEY ⭐⭐⭐
-    api_key = " AIzaSyDkEQuc6t5bAyZASw-6heb5_YqX2TOMbNY"
+    api_key = "AIzaSyCUFEN7loZiJxffZfG3AubcIRarpigeGUY"
     
     # Show AI thinking message
     thinking_placeholder = st.empty()
