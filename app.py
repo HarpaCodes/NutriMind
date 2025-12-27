@@ -1756,7 +1756,7 @@ else:
                                 with col4:
                                     st.markdown(f"""
                                     <div class="stat-card">
-                                        <div style="font-size: 1.5rem; color: var(--warning);">🥑</div>
+                                        <div style="font-size: 1.5rem; color: var(--warning);">"🥑"</div>
                                         <div class="stat-value">{st.session_state.daily_totals['fats']}g</div>
                                         <div class="stat-label">Fats</div>
                                         <div class="progress-container">
