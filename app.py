@@ -1753,52 +1753,376 @@ else:
                                     <div style="font-size: 2rem; font-weight: 700; color: var(--primary);">{nutrition['carbs']}g</div>
                                     <div style="font-size: 0.875rem; color: var(--text-secondary);">Carbs</div>
                                 </div>
-                                with col4:
-                                    st.markdown(f"""
-                                    <div class="stat-card">
-                                        <div style="font-size: 1.5rem; color: var(--warning);">"🥑"</div>
-                                        <div class="stat-value">{st.session_state.daily_totals['fats']}g</div>
-                                        <div class="stat-label">Fats</div>
-                                        <div class="progress-container">
-                                            <div class="progress-bar" style="width: {fat_percent}%"></div>
-                                        </div>
-                                        <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.25rem;">
-                                            {fat_percent:.0f}% of target
-                                        </div>
-                                    </div>
-                                    """, unsafe_allow_html=True)
-                            
-                            with col5:
-                                exercise_percent = min(100, (len(st.session_state.exercise_logs) * 30 / st.session_state.goals['exercise_minutes']) * 100)
-                                st.markdown(f"""
-                                <div class="stat-card">
-                                    <div style="font-size: 1.5rem; color: var(--info);">🏃</div>
-                                    <div class="stat-value">{len(st.session_state.exercise_logs)}</div>
-                                    <div class="stat-label">Sessions</div>
-                                    <div class="progress-container">
-                                        <div class="progress-bar" style="width: {exercise_percent}%"></div>
-                                    </div>
-                                    <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.25rem;">
-                                        {exercise_percent:.0f}% of goal
-                                    </div>
+                                <div style="text-align: center;">
+                                    <div style="font-size: 2rem; font-weight: 700; color: var(--primary);">{nutrition['fats']}g</div>
+                                    <div style="font-size: 0.875rem; color: var(--text-secondary);">Fats</div>
                                 </div>
-                                """, unsafe_allow_html=True)
+                            </div>
                             
-                            with col6:
-                                water_percent = min(100, (st.session_state.daily_totals.get('water', 0) / 2000) * 100)
-                                st.markdown(f"""
-                                <div class="stat-card">
-                                    <div style="font-size: 1.5rem; color: var(--primary-light);">💧</div>
-                                    <div class="stat-value">{st.session_state.daily_totals.get('water', 0)}ml</div>
-                                    <div class="stat-label">Water</div>
-                                    <div class="progress-container">
-                                        <div class="progress-bar" style="width: {water_percent}%"></div>
-                                    </div>
-                                    <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.25rem;">
-                                        {water_percent:.0f}% of goal
-                                    </div>
-                                </div>
-                                """, unsafe_allow_html=True)
+                            <div style="background: var(--bg-card-light); padding: 1rem; border-radius: 8px; border-left: 4px solid var(--primary);">
+                                <div style="font-size: 0.875rem; color: var(--text-secondary); margin-bottom: 0.25rem;">💡 Insight</div>
+                                <div style="color: var(--text-primary);">{nutrition['insight']}</div>
+                            </div>
+                        </div>
+                        """, unsafe_allow_html=True)
+                
+                # Save button
+                if st.session_state.current_analyzed_food:
+                    st.markdown("### Adjust Portion Size")
+                    portion = st.select_slider(
+                        "Select portion size:",
+                        options=["Small", "Medium", "Large", "Extra"],
+                        value="Medium"
+                    )
+                    
+                    portion_multipliers = {
+                        "Small": 0.7,
+                        "Medium": 1.0,
+                        "Large": 1.5,
+                        "Extra": 2.0
+                    }
+                    
+                    multiplier = portion_multipliers[portion]
+                    adjusted_nutrition = st.session_state.current_analyzed_food.copy()
+                    
+                    for key in ['calories', 'protein', 'carbs', 'fats']:
+                        if key in adjusted_nutrition:
+                            adjusted_nutrition[key] = int(adjusted_nutrition[key] * multiplier)
+                    
+                    st.info(f"**{portion} Portion:** {adjusted_nutrition['calories']} calories, {adjusted_nutrition['protein']}g protein")
+                    
+                    if st.button("✅ Save This Food", key="save_manual_food"):
+                        saved = save_food_to_session(adjusted_nutrition)
+                        if saved:
+                            st.balloons()
+                            st.session_state.current_analyzed_food = None
+                            st.rerun()
+    
+    with tab3:
+        # ========== EXERCISE TRACKER ==========
+        st.markdown("""
+        <div class="pro-card">
+            <div class="card-header">
+                <div class="card-icon">🏋️</div>
+                <h2 style="margin: 0; color: var(--text-primary);">Exercise Calculator & Tracker</h2>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        if st.session_state.daily_totals['calories'] > 0:
+            st.markdown(f"""
+            <div style="background: linear-gradient(135deg, var(--bg-card), var(--bg-card-light)); padding: 1.5rem; border-radius: var(--radius); border: 1px solid var(--border); margin-bottom: 2rem;">
+                <div style="display: flex; align-items: center; gap: 1rem;">
+                    <div style="font-size: 2rem;">🔥</div>
+                    <div>
+                        <div style="font-size: 0.875rem; color: var(--text-secondary);">Today's Consumption</div>
+                        <div style="font-size: 1.5rem; font-weight: 700; color: var(--text-primary);">
+                            {st.session_state.daily_totals['calories']} calories
+                        </div>
+                    </div>
+                </div>
+                <div style="margin-top: 1rem; color: var(--text-secondary);">
+                    Here's how to burn them effectively:
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
             
-            # Continue with the rest of the code...
-            # ... [Rest of the code remains the same as in the original]
+            exercises = get_exercise_suggestions(st.session_state.daily_totals['calories'])
+            
+            for ex in exercises:
+                col1, col2, col3 = st.columns([3, 1, 1])
+                with col1:
+                    st.markdown(f"""
+                    <div style="background: var(--bg-card); padding: 1rem; border-radius: 8px; border: 1px solid var(--border);">
+                        <div style="font-weight: 600; color: var(--text-primary);">{ex['name']}</div>
+                        <div style="font-size: 0.875rem; color: var(--text-secondary); margin-top: 0.25rem;">
+                            Burns approximately {ex['duration'] * ex['calories_per_min']} calories
+                        </div>
+                    </div>
+                    """, unsafe_allow_html=True)
+                with col2:
+                    st.markdown(f"""
+                    <div style="background: var(--bg-card); padding: 1rem; border-radius: 8px; border: 1px solid var(--border); text-align: center;">
+                        <div style="font-weight: 600; color: var(--text-primary);">{ex['duration']}</div>
+                        <div style="font-size: 0.75rem; color: var(--text-secondary);">min</div>
+                    </div>
+                    """, unsafe_allow_html=True)
+                with col3:
+                    if st.button("✅ Log", key=f"log_ex_{ex['name']}", use_container_width=True):
+                        exercise_log = {
+                            "name": ex['name'],
+                            "duration": ex['duration'],
+                            "calories_burned": ex['duration'] * ex['calories_per_min'],
+                            "time": datetime.now().strftime("%H:%M"),
+                            "date": datetime.now().strftime("%Y-%m-%d")
+                        }
+                        
+                        saved = save_exercise_to_session(exercise_log)
+                        if saved:
+                            st.success(f"✅ {ex['name']} logged!")
+                            st.rerun()
+            
+            st.divider()
+            
+            st.markdown("""
+            <div class="pro-card">
+                <div class="card-header">
+                    <div class="card-icon">🎯</div>
+                    <h3 style="margin: 0; color: var(--text-primary);">Log Custom Exercise</h3>
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            col1, col2 = st.columns(2)
+            
+            with col1:
+                exercise_types = ["Running", "Walking", "Cycling", "Gym", "Yoga", "Swimming", "Dancing", "Other"]
+                custom_exercise = st.selectbox("Select exercise type", exercise_types)
+                if custom_exercise == "Other":
+                    custom_exercise = st.text_input("Enter exercise name")
+                
+                duration = st.slider("Duration (minutes)", 5, 180, 30, 5)
+            
+            with col2:
+                intensity = st.select_slider(
+                    "Intensity Level",
+                    options=["Light", "Moderate", "High", "Very High"]
+                )
+                
+                intensity_multiplier = {"Light": 5, "Moderate": 8, "High": 12, "Very High": 15}
+                calories_burned = duration * intensity_multiplier[intensity]
+                
+                st.markdown(f"""
+                <div style="background: var(--bg-card); padding: 1.5rem; border-radius: var(--radius); border: 1px solid var(--border); text-align: center;">
+                    <div style="font-size: 0.875rem; color: var(--text-secondary); margin-bottom: 0.5rem;">Estimated Calories Burned</div>
+                    <div style="font-size: 2.5rem; font-weight: 700; color: var(--primary);">{calories_burned}</div>
+                    <div style="font-size: 0.875rem; color: var(--text-secondary); margin-top: 0.5rem;">
+                        Based on {duration} minutes at {intensity} intensity
+                    </div>
+                </div>
+                """, unsafe_allow_html=True)
+                
+                if st.button("Log Custom Exercise", type="primary", use_container_width=True):
+                    exercise_log = {
+                        "name": custom_exercise,
+                        "duration": duration,
+                        "intensity": intensity,
+                        "calories_burned": calories_burned,
+                        "time": datetime.now().strftime("%H:%M"),
+                        "date": datetime.now().strftime("%Y-%m-%d")
+                    }
+                    
+                    saved = save_exercise_to_session(exercise_log)
+                    if saved:
+                        st.success(f"✅ {custom_exercise} logged for {duration} minutes!")
+                        st.balloons()
+                        st.rerun()
+        
+        else:
+            st.markdown("""
+            <div style="text-align: center; padding: 3rem; color: var(--text-secondary);">
+                <div style="font-size: 4rem; margin-bottom: 1rem;">🍽️</div>
+                <h3 style="color: var(--text-primary); margin-bottom: 0.5rem;">Log Some Food First!</h3>
+                <p style="margin: 0;">We need to know your calorie intake to suggest appropriate exercises.</p>
+                <p style="margin: 0.5rem 0 0; font-size: 0.875rem;">Go to the 'Log Food' tab to get started.</p>
+            </div>
+            """, unsafe_allow_html=True)
+        
+        # Exercise history
+        st.markdown("---")
+        st.markdown("""
+        <div class="pro-card">
+            <div class="card-header">
+                <div class="card-icon">📅</div>
+                <h3 style="margin: 0; color: var(--text-primary);">Today's Exercise History</h3>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        if st.session_state.exercise_logs:
+            today_exercises = [ex for ex in st.session_state.exercise_logs 
+                              if ex.get('date') == datetime.now().strftime("%Y-%m-%d")]
+            
+            if today_exercises:
+                total_calories_burned = sum([ex.get('calories_burned', 0) for ex in today_exercises])
+                total_minutes = sum([ex.get('duration', 0) for ex in today_exercises])
+                
+                col1, col2 = st.columns(2)
+                with col1:
+                    st.markdown(f"""
+                    <div style="background: var(--bg-card); padding: 1.5rem; border-radius: var(--radius); border: 1px solid var(--border); text-align: center;">
+                        <div style="font-size: 0.875rem; color: var(--text-secondary); margin-bottom: 0.5rem;">Total Calories Burned</div>
+                        <div style="font-size: 2.5rem; font-weight: 700; color: var(--primary);">{total_calories_burned}</div>
+                    </div>
+                    """, unsafe_allow_html=True)
+                with col2:
+                    st.markdown(f"""
+                    <div style="background: var(--bg-card); padding: 1.5rem; border-radius: var(--radius); border: 1px solid var(--border); text-align: center;">
+                        <div style="font-size: 0.875rem; color: var(--text-secondary); margin-bottom: 0.5rem;">Total Exercise Time</div>
+                        <div style="font-size: 2.5rem; font-weight: 700; color: var(--primary);">{total_minutes}</div>
+                        <div style="font-size: 0.875rem; color: var(--text-secondary); margin-top: 0.25rem;">minutes</div>
+                    </div>
+                    """, unsafe_allow_html=True)
+                
+                for ex in today_exercises:
+                    st.markdown(f"""
+                    <div class="exercise-log-item-pro">
+                        <div style="display: flex; justify-content: space-between; align-items: start;">
+                            <div>
+                                <strong style="color: var(--text-primary);">{ex.get('name', 'Exercise')}</strong><br>
+                                <small style="color: var(--text-secondary);">
+                                    ⏱️ {ex.get('duration', 0)} min | 🔥 {ex.get('calories_burned', 0)} cal burned
+                                </small>
+                            </div>
+                            <small style="color: var(--text-muted);">{ex.get('time', '')}</small>
+                        </div>
+                        <div style="margin-top: 0.5rem; font-size: 0.875rem; color: var(--text-secondary);">
+                            ⚡ Intensity: {ex.get('intensity', 'Moderate')}
+                        </div>
+                    </div>
+                    """, unsafe_allow_html=True)
+            else:
+                st.markdown("""
+                <div style="text-align: center; padding: 2rem; color: var(--text-secondary);">
+                    <div style="font-size: 3rem; margin-bottom: 1rem;">⏳</div>
+                    <p style="margin: 0;">No exercises logged today yet.</p>
+                </div>
+                """, unsafe_allow_html=True)
+        else:
+            st.markdown("""
+            <div style="text-align: center; padding: 2rem; color: var(--text-secondary);">
+                <div style="font-size: 3rem; margin-bottom: 1rem;">🏃</div>
+                <h3 style="color: var(--text-primary); margin-bottom: 0.5rem;">Start Your Fitness Journey</h3>
+                <p style="margin: 0;">No exercises logged yet. Start logging to see your progress!</p>
+            </div>
+            """, unsafe_allow_html=True)
+    
+    with tab4:
+        # ========== RECOMMENDATIONS ==========
+        st.markdown("""
+        <div class="pro-card">
+            <div class="card-header">
+                <div class="card-icon">🥗</div>
+                <h2 style="margin: 0; color: var(--text-primary);">Personalized Meal Recommendations</h2>
+            </div>
+            <div style="margin-top: 1rem;">
+                <div style="font-size: 0.875rem; color: var(--text-secondary);">Based on your diet preference:</div>
+                <div style="font-size: 1.25rem; font-weight: 600; color: var(--primary); margin-top: 0.25rem;">
+                    {diet_preference}
+                </div>
+            </div>
+        </div>
+        """.format(diet_preference=st.session_state.diet_preference), unsafe_allow_html=True)
+        
+        remaining_calories = st.session_state.goals['calories'] - st.session_state.daily_totals['calories']
+        remaining_protein = st.session_state.goals['protein'] - st.session_state.daily_totals['protein']
+        
+        col1, col2 = st.columns(2)
+        with col1:
+            st.markdown(f"""
+            <div style="background: var(--bg-card); padding: 1.5rem; border-radius: var(--radius); border: 1px solid var(--border); text-align: center;">
+                <div style="font-size: 0.875rem; color: var(--text-secondary); margin-bottom: 0.5rem;">Remaining Calories</div>
+                <div style="font-size: 2.5rem; font-weight: 700; color: {'var(--success)' if remaining_calories > 0 else 'var(--danger)'};">
+                    {max(0, remaining_calories)}
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
+        with col2:
+            st.markdown(f"""
+            <div style="background: var(--bg-card); padding: 1.5rem; border-radius: var(--radius); border: 1px solid var(--border); text-align: center;">
+                <div style="font-size: 0.875rem; color: var(--text-secondary); margin-bottom: 0.5rem;">Remaining Protein</div>
+                <div style="font-size: 2.5rem; font-weight: 700; color: {'var(--success)' if remaining_protein > 0 else 'var(--danger)'};">
+                    {max(0, remaining_protein)}g
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
+        
+        meal_time = st.selectbox("Select meal time:", ["Breakfast", "Lunch", "Dinner", "Snack"], label_visibility="collapsed")
+        
+        suggestions = get_meal_suggestions(
+            meal_time, 
+            st.session_state.diet_preference, 
+            remaining_calories, 
+            remaining_protein
+        )
+        
+        st.markdown(f"""
+        <div class="pro-card">
+            <div class="card-header">
+                <div class="card-icon">🍽️</div>
+                <h3 style="margin: 0; color: var(--text-primary);">{meal_time} Suggestions</h3>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        for i, suggestion in enumerate(suggestions):
+            with st.container():
+                st.markdown(f"""
+                <div class="meal-suggestion-card-pro">
+                    <div style="display: flex; justify-content: space-between; align-items: start;">
+                        <div>
+                            <strong style="color: var(--text-primary); font-size: 1.1em;">{suggestion}</strong><br>
+                            <small style="color: var(--text-secondary);">
+                                Recommended based on your {st.session_state.diet_preference} diet
+                            </small>
+                        </div>
+                    </div>
+                </div>
+                """, unsafe_allow_html=True)
+                
+                if st.button(f"Quick Add to Today's Log", key=f"add_meal_{i}", use_container_width=True):
+                    import re
+                    cal_match = re.search(r'\((\d+) cal', suggestion)
+                    protein_match = re.search(r', (\d+)g protein', suggestion)
+                    
+                    calories = int(cal_match.group(1)) if cal_match else 300
+                    protein = int(protein_match.group(1)) if protein_match else 15
+                    
+                    food_name = suggestion.split(" (")[0].replace("🍳 ", "").replace("🥚 ", "").replace("🍗 ", "").replace("🧀 ", "").replace("🥣 ", "").replace("🐟 ", "").replace("🥘 ", "").replace("🍚 ", "").replace("🥗 ", "").replace("🍛 ", "")
+                    
+                    food_data = {
+                        "food_name": food_name,
+                        "calories": calories,
+                        "protein": protein,
+                        "carbs": calories * 0.5 / 4,
+                        "fats": calories * 0.25 / 9,
+                        "insight": f"Recommended {meal_time} for {st.session_state.diet_preference} diet",
+                        "meal_time": meal_time
+                    }
+                    
+                    saved = save_food_to_session(food_data)
+                    if saved:
+                        st.success(f"✅ {food_name} added to your food log!")
+                        st.rerun()
+        
+        st.markdown("---")
+        
+        # Nutrition tips
+        st.subheader("💡 Personalized Nutrition Tips")
+        
+        if remaining_calories < 0:
+            st.warning("⚠️ You've exceeded your calorie goal for today! Consider lighter meals or extra exercise.")
+        elif remaining_calories < 300:
+            st.info("🍎 You have few calories left. Opt for light, nutrient-dense snacks.")
+        else:
+            st.success("🎯 You're on track! You still have room for a satisfying meal.")
+        
+        if remaining_protein < 0:
+            st.warning("⚠️ You've exceeded your protein goal. Great for muscle building!")
+        elif remaining_protein < 15:
+            st.info("💪 Add a protein-rich food to meet your daily target.")
+        else:
+            st.success("🏋️ Good protein balance. Keep it up!")
+
+# ========== FOOTER ==========
+st.markdown("---")
+st.markdown(
+    """
+    <div style="text-align: center; color: #00C9C9; padding: 20px;">
+        <p><strong>NutriMind</strong> | Scan.Track.Grow 🥗🧠🏃💪</p>
+        <p><strong>Built for Google TechSprint</strong></p>
+        <p style="font-size: 0.9em;">Team euphoria</p>
+    </div>
+    """,
+    unsafe_allow_html=True
+)
