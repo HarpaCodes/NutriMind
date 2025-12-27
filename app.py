@@ -9,6 +9,7 @@ import io
 import random
 import json
 import base64
+import requests
 
 # ========== CRITICAL: Initialize ALL session state at TOP ==========
 if 'app_initialized' not in st.session_state:
@@ -45,15 +46,29 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Custom CSS for better styling with dark mode support
+# Custom CSS for dark teal theme
 st.markdown("""
 <style>
-    /* Main Header with gradient */
+    /* Dark Teal Theme Variables */
+    :root {
+        --teal-primary: #006D6F;
+        --teal-secondary: #008080;
+        --teal-light: #00A0A0;
+        --teal-dark: #004D4F;
+        --teal-accent: #00C9C9;
+        --bg-dark: #0A1929;
+        --bg-card: #132F4C;
+        --text-primary: #E6F7FF;
+        --text-secondary: #B3D9FF;
+        --border-color: #006D6F;
+    }
+    
+    /* Main Header with teal gradient */
     .main-header {
         font-size: 3rem;
         text-align: center;
         margin-bottom: 1rem;
-        background: linear-gradient(135deg, #FF6B6B 0%, #FFD166 25%, #06D6A0 50%, #118AB2 75%, #073B4C 100%);
+        background: linear-gradient(135deg, #00C9C9 0%, #006D6F 25%, #008080 50%, #00A0A0 75%, #004D4F 100%);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         background-clip: text;
@@ -63,77 +78,103 @@ st.markdown("""
     }
     
     .nutri-card {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
+        background: linear-gradient(135deg, #004D4F 0%, #006D6F 100%);
+        color: var(--text-primary);
         padding: 1.5rem;
         border-radius: 15px;
         margin-bottom: 1rem;
-        box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        border: 1px solid var(--border-color);
     }
     
     .scan-option {
         text-align: center;
         padding: 20px;
-        border: 2px dashed #4CAF50;
+        border: 2px dashed #00C9C9;
         border-radius: 10px;
         margin: 10px 0;
         transition: all 0.3s;
-        background: white;
+        background: var(--bg-card);
+        color: var(--text-primary);
+        border-color: var(--teal-accent);
     }
     
-    /* Food log items with dark mode support */
+    /* Food log items with teal theme */
     .food-log-item {
-        background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+        background: linear-gradient(135deg, #004D4F 0%, #006D6F 100%);
         padding: 15px;
         border-radius: 10px;
         margin: 10px 0;
-        border-left: 4px solid #4CAF50;
-        box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-        color: #333333 !important;
+        border-left: 4px solid #00C9C9;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+        color: var(--text-primary) !important;
+        border: 1px solid var(--border-color);
     }
     
-    /* Exercise log items with dark mode support */
+    /* Exercise log items with teal theme */
     .exercise-log-item {
-        background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+        background: linear-gradient(135deg, #004D4F 0%, #006D6F 100%);
         padding: 15px;
         border-radius: 10px;
         margin: 10px 0;
-        border-left: 4px solid #FF9800;
-        box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-        color: #333333 !important;
+        border-left: 4px solid #00A0A0;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+        color: var(--text-primary) !important;
+        border: 1px solid var(--border-color);
     }
     
-    /* Fix for dark mode text colors */
+    /* Fix for text colors */
     .stMarkdown h1, .stMarkdown h2, .stMarkdown h3, .stMarkdown p, .stMarkdown div {
-        color: inherit !important;
+        color: var(--text-primary) !important;
     }
     
     .slogan {
         text-align: center;
         font-size: 1.2rem;
-        color: #666;
+        color: #00C9C9;
         font-weight: 600;
         letter-spacing: 1px;
         margin: 10px 0 30px 0;
     }
     
     .success-toast {
-        background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
-        color: white;
+        background: linear-gradient(135deg, #006D6F 0%, #00A0A0 100%);
+        color: var(--text-primary);
         padding: 15px;
         border-radius: 10px;
         margin: 10px 0;
         animation: fadeIn 0.5s;
-        box-shadow: 0 4px 12px rgba(76, 175, 80, 0.2);
+        box-shadow: 0 4px 12px rgba(0, 201, 201, 0.3);
+        border: 1px solid var(--teal-accent);
     }
     
     .ai-thinking {
-        background: #e3f2fd;
+        background: linear-gradient(135deg, #004D4F 0%, #006D6F 100%);
         padding: 15px;
         border-radius: 10px;
         margin: 10px 0;
-        border-left: 4px solid #2196F3;
-        color: #333;
+        border-left: 4px solid #00C9C9;
+        color: var(--text-primary);
+        border: 1px solid var(--border-color);
+    }
+    
+    /* MEAL SUGGESTION CARD - FIXED FOR DARK MODE */
+    .meal-suggestion-card {
+        padding: 15px;
+        background: linear-gradient(135deg, #004D4F 0%, #006D6F 100%);
+        border-radius: 10px;
+        margin: 10px 0;
+        border-left: 4px solid #00C9C9;
+        border: 1px solid var(--border-color);
+    }
+    
+    .meal-suggestion-card strong {
+        color: #FFFFFF !important;
+        font-size: 1.1em;
+    }
+    
+    .meal-suggestion-card small {
+        color: #B3D9FF !important;
     }
     
     @keyframes fadeIn {
@@ -141,30 +182,119 @@ st.markdown("""
         to { opacity: 1; transform: translateY(0); }
     }
     
-    /* Dark mode specific fixes */
-    @media (prefers-color-scheme: dark) {
-        .food-log-item, .exercise-log-item {
-            background: linear-gradient(135deg, #2d3748 0%, #4a5568 100%) !important;
-            color: #e2e8f0 !important;
-            border-left: 4px solid #4CAF50;
-        }
-        
-        .food-log-item strong, .exercise-log-item strong {
-            color: #ffffff !important;
-        }
-        
-        .food-log-item small, .exercise-log-item small {
-            color: #cbd5e0 !important;
-        }
-        
-        .food-log-item em, .exercise-log-item em {
-            color: #a0aec0 !important;
-        }
+    /* Progress bars with teal theme */
+    .stProgress > div > div > div > div {
+        background-color: #00C9C9;
+    }
+    
+    /* Buttons with teal theme */
+    .stButton > button {
+        background: linear-gradient(135deg, #006D6F 0%, #008080 100%);
+        color: white;
+        border: 1px solid #00A0A0;
+    }
+    
+    .stButton > button:hover {
+        background: linear-gradient(135deg, #008080 0%, #00A0A0 100%);
+        border-color: #00C9C9;
+    }
+    
+    /* Sidebar styling */
+    .css-1d391kg, .css-1lcbmhc {
+        background-color: var(--bg-dark);
+    }
+    
+    /* Metric cards */
+    .stMetric {
+        background: linear-gradient(135deg, #004D4F 0%, #006D6F 100%);
+        padding: 10px;
+        border-radius: 10px;
+        border: 1px solid var(--border-color);
+    }
+    
+    /* Radio buttons with teal theme */
+    .stRadio > div {
+        background: var(--bg-card);
+        padding: 10px;
+        border-radius: 10px;
+        border: 1px solid var(--border-color);
+    }
+    
+    /* Selectbox and slider styling */
+    .stSelectbox, .stSlider {
+        background: var(--bg-card);
     }
     
     /* Ensure text is visible in all modes */
     div[data-testid="stVerticalBlock"] > div > div > div > div {
-        color: inherit !important;
+        color: var(--text-primary) !important;
+    }
+    
+    /* Main background */
+    .stApp {
+        background-color: var(--bg-dark);
+    }
+    
+    /* Tab styling */
+    .stTabs [data-baseweb="tab-list"] {
+        gap: 8px;
+    }
+    
+    .stTabs [data-baseweb="tab"] {
+        background: linear-gradient(135deg, #004D4F 0%, #006D6F 100%);
+        border-radius: 8px 8px 0 0;
+        border: 1px solid var(--border-color);
+        color: var(--text-primary);
+    }
+    
+    .stTabs [aria-selected="true"] {
+        background: linear-gradient(135deg, #006D6F 0%, #008080 100%) !important;
+        color: white !important;
+        border-bottom: 2px solid #00C9C9 !important;
+    }
+    
+    /* Input fields */
+    .stTextInput > div > div > input,
+    .stNumberInput > div > div > input,
+    .stSelectbox > div > div > div {
+        background: var(--bg-card);
+        color: var(--text-primary);
+        border-color: var(--border-color);
+    }
+    
+    /* File uploader */
+    .stFileUploader > div > div {
+        background: var(--bg-card);
+        border-color: var(--border-color);
+    }
+    
+    /* Info boxes */
+    .stInfo {
+        background: linear-gradient(135deg, #004D4F 0%, #006D6F 100%);
+        border-left: 4px solid #00C9C9;
+        color: var(--text-primary);
+        border: 1px solid var(--border-color);
+    }
+    
+    /* Warning boxes */
+    .stWarning {
+        background: linear-gradient(135deg, #4D3C00 0%, #6F5D00 100%);
+        border-left: 4px solid #FFD700;
+        color: var(--text-primary);
+        border: 1px solid #FFD700;
+    }
+    
+    /* Success boxes */
+    .stSuccess {
+        background: linear-gradient(135deg, #004D2E 0%, #006D47 100%);
+        border-left: 4px solid #00FF95;
+        color: var(--text-primary);
+        border: 1px solid #00FF95;
+    }
+    
+    /* Plotly chart background */
+    .js-plotly-plot .plotly, .modebar {
+        background-color: var(--bg-card) !important;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -173,14 +303,24 @@ st.markdown("""
 st.markdown('<h1 class="main-header">NutriMind</h1>', unsafe_allow_html=True)
 st.markdown('<p class="slogan">Scan • Track • Grow</p>', unsafe_allow_html=True)
 
-# ========== SIMPLIFIED GEMINI AI FUNCTION ==========
+# ========== IMPROVED GEMINI AI FUNCTION ==========
 def analyze_food_with_gemini(food_input, image=None):
-    """Simplified food analysis with proper Gemini 2.5 Flash Lite API calls"""
+    """Improved food analysis with better Gemini 2.5 Flash Lite API calls"""
     try:
         # Try to use Gemini if API key is available
         api_key = st.secrets.get("GEMINI_API_KEY", "")
         if not api_key:
+            # Try environment variable as fallback
+            import os
+            api_key = os.environ.get("GEMINI_API_KEY", "")
+        
+        if not api_key:
+            st.warning("⚠️ Gemini API key not found. Using fallback database.")
             return get_fallback_nutrition(food_input)
+        
+        # Show AI thinking message
+        thinking_placeholder = st.empty()
+        thinking_placeholder.markdown('<div class="ai-thinking">🤖 AI is analyzing your food image... Please wait</div>', unsafe_allow_html=True)
         
         # Use requests to call Gemini API directly
         import requests
@@ -189,11 +329,26 @@ def analyze_food_with_gemini(food_input, image=None):
         if image:
             # Convert image to base64
             buffered = io.BytesIO()
-            image.save(buffered, format="JPEG")
+            # Convert image to RGB if needed
+            if image.mode != 'RGB':
+                image = image.convert('RGB')
+            image.save(buffered, format="JPEG", quality=85)
             img_str = base64.b64encode(buffered.getvalue()).decode()
             
             prompt = """Analyze this food image and provide nutrition information.
-            Return JSON format: {"food_name": "Name", "calories": 200, "protein": 10, "carbs": 25, "fats": 8, "insight": "info"}"""
+            FIRST identify what food/dish this is.
+            Then provide nutrition facts in this EXACT JSON format:
+            {
+                "food_name": "Specific Name of Food",
+                "calories": number,
+                "protein": number,
+                "carbs": number,
+                "fats": number,
+                "insight": "Brief nutritional insight about this food"
+            }
+            
+            IMPORTANT: Return ONLY the JSON object, no additional text.
+            Use realistic values for common foods. If uncertain, provide reasonable estimates."""
             
             payload = {
                 "contents": [{
@@ -206,48 +361,105 @@ def analyze_food_with_gemini(food_input, image=None):
                             }
                         }
                     ]
-                }]
+                }],
+                "generationConfig": {
+                    "temperature": 0.2,
+                    "maxOutputTokens": 500,
+                }
             }
         else:
             prompt = f"""Analyze this food: {food_input}
-            Provide accurate nutrition facts in JSON format:
-            {{"food_name": "Specific Name", "calories": number, "protein": number, "carbs": number, "fats": number, "insight": "info"}}
+            Identify what food/dish this is and provide accurate nutrition facts.
+            Return in this EXACT JSON format:
+            {{
+                "food_name": "Specific Name of Food",
+                "calories": number,
+                "protein": number,
+                "carbs": number,
+                "fats": number,
+                "insight": "Brief nutritional insight"
+            }}
+            
+            IMPORTANT: Return ONLY the JSON object, no additional text.
             Use realistic values for common foods."""
             
             payload = {
                 "contents": [{
                     "parts": [{"text": prompt}]
-                }]
+                }],
+                "generationConfig": {
+                    "temperature": 0.2,
+                    "maxOutputTokens": 500,
+                }
             }
         
-        # Make API request
-        response = requests.post(
-            f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key={api_key}",
-            json=payload,
-            headers={"Content-Type": "application/json"}
-        )
-        
-        if response.status_code == 200:
-            result = response.json()
-            if "candidates" in result and len(result["candidates"]) > 0:
-                response_text = result["candidates"][0]["content"]["parts"][0]["text"]
-                
-                # Extract JSON from response
-                import re
-                json_match = re.search(r'\{.*\}', response_text, re.DOTALL)
-                
-                if json_match:
+        # Make API request with timeout
+        try:
+            response = requests.post(
+                f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key={api_key}",
+                json=payload,
+                headers={"Content-Type": "application/json"},
+                timeout=30
+            )
+            
+            thinking_placeholder.empty()  # Remove thinking message
+            
+            if response.status_code == 200:
+                result = response.json()
+                if "candidates" in result and len(result["candidates"]) > 0:
+                    response_text = result["candidates"][0]["content"]["parts"][0]["text"]
+                    
+                    # Clean the response text
+                    response_text = response_text.strip()
+                    
+                    # Remove markdown code blocks if present
+                    if response_text.startswith("```json"):
+                        response_text = response_text[7:]
+                    if response_text.endswith("```"):
+                        response_text = response_text[:-3]
+                    response_text = response_text.strip()
+                    
+                    # Try to parse JSON
                     try:
-                        nutrition_data = json.loads(json_match.group())
-                        return nutrition_data
-                    except:
-                        pass
+                        nutrition_data = json.loads(response_text)
+                        
+                        # Validate required fields
+                        required_fields = ["food_name", "calories", "protein", "carbs", "fats", "insight"]
+                        if all(field in nutrition_data for field in required_fields):
+                            # Ensure numeric fields are numbers
+                            nutrition_data["calories"] = float(nutrition_data["calories"])
+                            nutrition_data["protein"] = float(nutrition_data["protein"])
+                            nutrition_data["carbs"] = float(nutrition_data["carbs"])
+                            nutrition_data["fats"] = float(nutrition_data["fats"])
+                            
+                            # Round to integers
+                            for key in ["calories", "protein", "carbs", "fats"]:
+                                nutrition_data[key] = int(round(nutrition_data[key]))
+                            
+                            st.success(f"✅ AI successfully identified: **{nutrition_data['food_name']}**")
+                            return nutrition_data
+                        else:
+                            st.warning("⚠️ AI response missing some fields. Using fallback.")
+                    except json.JSONDecodeError as e:
+                        st.warning(f"⚠️ Could not parse AI response as JSON. Using fallback.")
+                        st.write(f"AI Response preview: {response_text[:200]}...")
+            
+            # If API response is not successful
+            st.warning(f"⚠️ API response not as expected. Status: {response.status_code}")
+            
+        except requests.exceptions.Timeout:
+            thinking_placeholder.empty()
+            st.warning("⚠️ AI analysis timed out. Using fallback database.")
+        except requests.exceptions.RequestException as e:
+            thinking_placeholder.empty()
+            st.warning(f"⚠️ Network error: {str(e)[:100]}. Using fallback database.")
         
-        # If API fails, use fallback
+        # If any error, use fallback
         return get_fallback_nutrition(food_input)
         
     except Exception as e:
-        # If any error, use fallback
+        thinking_placeholder.empty()
+        st.warning(f"⚠️ AI analysis error: {str(e)[:100]}. Using fallback database.")
         return get_fallback_nutrition(food_input)
 
 def get_fallback_nutrition(food_name):
@@ -733,7 +945,7 @@ else:
                             <strong>🍽️ {log.get('food_name', 'Food')}</strong><br>
                             <small>🔥 {log.get('calories', 0)} cal | 💪🏼 {log.get('protein', 0)}g protein</small><br>
                             <em>💡 {log.get('insight', '')}</em><br>
-                            <small style="color: #666;">📅 {log.get('date', 'Today')} {log.get('time', '')}</small>
+                            <small style="color: #B3D9FF;">📅 {log.get('date', 'Today')} {log.get('time', '')}</small>
                         </div>
                         """, unsafe_allow_html=True)
                 st.info(f"**Total foods logged today:** {len([f for f in st.session_state.food_logs if f.get('date') == datetime.now().strftime('%Y-%m-%d')])}")
@@ -791,30 +1003,25 @@ else:
                     st.write(f"Mode: {image.mode}")
                 
                 if st.button("Analyze with AI 🔍", type="primary", use_container_width=True):
-                    with st.spinner("🔍 AI is analyzing your food image..."):
-                        time.sleep(1)
-                        
-                        # Use the food analysis function
-                        nutrition = analyze_food_with_gemini("uploaded food image", image)
-                        nutrition['scan_type'] = "Image"
-                        
-                        # Store for saving
-                        st.session_state.current_analyzed_food = nutrition
-                        
-                        st.success(f"✅ AI Detected: **{nutrition['food_name']}**")
-                        
-                        st.markdown(f"### 🍽️ {nutrition['food_name']}")
-                        nutri_cols = st.columns(4)
-                        with nutri_cols[0]:
-                            st.metric("Calories", nutrition['calories'])
-                        with nutri_cols[1]:
-                            st.metric("Protein", f"{nutrition['protein']}g")
-                        with nutri_cols[2]:
-                            st.metric("Carbs", f"{nutrition['carbs']}g")
-                        with nutri_cols[3]:
-                            st.metric("Fats", f"{nutrition['fats']}g")
-                        
-                        st.info(f"💡 **Insight:** {nutrition['insight']}")
+                    # Use the improved food analysis function
+                    nutrition = analyze_food_with_gemini("uploaded food image", image)
+                    nutrition['scan_type'] = "Image"
+                    
+                    # Store for saving
+                    st.session_state.current_analyzed_food = nutrition
+                    
+                    st.markdown(f"### 🍽️ {nutrition['food_name']}")
+                    nutri_cols = st.columns(4)
+                    with nutri_cols[0]:
+                        st.metric("Calories", nutrition['calories'])
+                    with nutri_cols[1]:
+                        st.metric("Protein", f"{nutrition['protein']}g")
+                    with nutri_cols[2]:
+                        st.metric("Carbs", f"{nutrition['carbs']}g")
+                    with nutri_cols[3]:
+                        st.metric("Fats", f"{nutrition['fats']}g")
+                    
+                    st.info(f"💡 **Insight:** {nutrition['insight']}")
             
             # Save button
             if st.session_state.current_analyzed_food:
@@ -1118,14 +1325,7 @@ else:
         for i, suggestion in enumerate(suggestions):
             with st.container():
                 st.markdown(f"""
-                <div style="
-                    padding: 15px;
-                    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-                    border-radius: 10px;
-                    margin: 10px 0;
-                    border-left: 4px solid #4CAF50;
-                    color: #333333;
-                ">
+                <div class="meal-suggestion-card">
                     <strong>{suggestion}</strong><br>
                     <small>Recommended based on your {st.session_state.diet_preference} diet</small>
                 </div>
@@ -1179,7 +1379,7 @@ else:
 st.markdown("---")
 st.markdown(
     """
-    <div style="text-align: center; color: #666; padding: 20px;">
+    <div style="text-align: center; color: #00C9C9; padding: 20px;">
         <p><strong>NutriMind</strong> | Scan.Track.Grow 🥗🧠🏃🏽‍♀️💪🏽</p>
         <p><strong>Built for Google TechSprint</strong></p>
         <p style="font-size: 0.9em;">Team euphoria</p>
