@@ -39,7 +39,6 @@ if 'app_initialized' not in st.session_state:
     st.session_state.current_analyzed_food = None
     st.session_state.show_success = False
     st.session_state.success_message = ""
-    st.session_state.gemini_api_key = ""
 
 # Configure the page
 st.set_page_config(
@@ -638,40 +637,13 @@ st.markdown('<p class="slogan">Scan • Track • Grow</p>', unsafe_allow_html=T
 
 # ========== PROPER GEMINI AI FUNCTION ==========
 def analyze_food_with_gemini(food_input, image=None):
-    """PROPER Gemini AI Analysis - Get your API key from: https://makersuite.google.com/app/apikey"""
+    """PROPER Gemini AI Analysis"""
     
-    # ⭐⭐⭐ SECURE API KEY HANDLING ⭐⭐⭐
-    # Try to get API key from Streamlit secrets first (for deployment)
-    api_key = None
-    
-    try:
-        # First try: Streamlit secrets (for deployed app)
-        if hasattr(st, 'secrets') and 'GEMINI_API_KEY' in st.secrets:
-            api_key = st.secrets["GEMINI_API_KEY"]
-    except:
-        pass
-    
-    # Second try: Environment variable (for local development)
-    if not api_key:
-        api_key = os.environ.get("GEMINI_API_KEY")
-    
-    # Third try: Session state (user input)
-    if not api_key and 'gemini_api_key' in st.session_state and st.session_state.gemini_api_key:
-        api_key = st.session_state.gemini_api_key
-    
-    # If still no API key, show user-friendly message and use fallback
-    if not api_key:
-        st.warning("""
-        ⚠️ **Gemini AI API Key Required**
-        
-        To use AI food analysis, you need to provide a Gemini API key:
-        
-        1. **Get a free API key:** [https://makersuite.google.com/app/apikey](https://makersuite.google.com/app/apikey)
-        2. **Enter it in the sidebar** under "🔐 Gemini API Setup"
-        
-        Meanwhile, using fallback nutrition database.
-        """)
-        return get_fallback_nutrition(food_input)
+    # =============================================
+    # ⚠️ IMPORTANT: Replace this with YOUR API key!
+    # Get it from: https://makersuite.google.com/app/apikey
+    # =============================================
+    api_key = "YOUR_API_KEY_HERE"  # ⬅️ REPLACE THIS WITH YOUR KEY
     
     # Show AI thinking message
     thinking_placeholder = st.empty()
@@ -679,9 +651,9 @@ def analyze_food_with_gemini(food_input, image=None):
     
     try:
         # Check if API key is valid
-        if not api_key or "AIzaSy" not in api_key:
+        if not api_key or api_key == "YOUR_API_KEY_HERE":
             thinking_placeholder.empty()
-            st.error("❌ Invalid API key. Please get a new one from: https://makersuite.google.com/app/apikey")
+            st.error("❌ API key not configured. Please contact the developer.")
             return get_fallback_nutrition(food_input)
         
         # Prepare the prompt
@@ -814,10 +786,8 @@ def analyze_food_with_gemini(food_input, image=None):
             st.error("""
             ❌ **API Error 403: Invalid API Key**
             
-            Your API key is invalid or disabled. Please:
-            1. Get a NEW API key from: https://makersuite.google.com/app/apikey
-            2. Enter it in the sidebar under "🔐 Gemini API Setup"
-            3. Make sure "Generative Language API" is enabled at: https://console.cloud.google.com/apis/library
+            The API key has expired or is invalid.
+            Please contact the developer for assistance.
             """)
         elif response.status_code == 429:
             st.error("❌ API quota exceeded. Try again in a few minutes.")
@@ -1049,50 +1019,6 @@ def save_exercise_to_session(exercise_data):
 # ========== SIDEBAR ==========
 with st.sidebar:
     st.markdown("## 👤 User Profile")
-    
-    # Gemini API Setup Section (always shown)
-    st.markdown("---")
-    st.markdown("## 🔐 Gemini API Setup")
-    st.markdown("**Required for AI food analysis**")
-    
-    # Check if we already have an API key from secrets/env
-    api_key_from_secrets = None
-    try:
-        if hasattr(st, 'secrets') and 'GEMINI_API_KEY' in st.secrets:
-            api_key_from_secrets = st.secrets["GEMINI_API_KEY"]
-    except:
-        pass
-    
-    if not api_key_from_secrets:
-        api_key_from_secrets = os.environ.get("GEMINI_API_KEY")
-    
-    if api_key_from_secrets:
-        st.success("✅ API Key loaded from configuration")
-        st.session_state.gemini_api_key = api_key_from_secrets
-        st.info("API key is securely configured.")
-    else:
-        # User input for API key
-        user_api_key = st.text_input(
-            "Enter Gemini API Key:",
-            type="password",
-            value=st.session_state.gemini_api_key,
-            help="Get your free API key from: https://makersuite.google.com/app/apikey"
-        )
-        
-        if user_api_key:
-            st.session_state.gemini_api_key = user_api_key
-            if st.button("Save API Key", key="save_api_key"):
-                st.success("✅ API Key saved!")
-                st.rerun()
-        
-        st.markdown("""
-        **How to get API key:**
-        1. Go to [https://makersuite.google.com/app/apikey](https://makersuite.google.com/app/apikey)
-        2. Click "Create API key"
-        3. Copy the key and paste above
-        """)
-    
-    st.markdown("---")
     
     if st.session_state.user is None:
         name = st.text_input("Your Name", value=" ")
@@ -1372,18 +1298,6 @@ else:
     with tab2:
         # ========== LOG FOOD ==========
         st.header("Log Your Food Intake")
-        
-        # Check if API key is configured
-        if not st.session_state.gemini_api_key:
-            st.warning("""
-            ⚠️ **Gemini API Key Required for AI Analysis**
-            
-            To use AI food analysis features, please:
-            1. Get a free API key from: [https://makersuite.google.com/app/apikey](https://makersuite.google.com/app/apikey)
-            2. Enter it in the sidebar under "🔐 Gemini API Setup"
-            
-            You can still use manual food entry with our database.
-            """)
         
         st.markdown("### Choose How to Log Food:")
         
