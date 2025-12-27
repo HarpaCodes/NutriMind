@@ -1134,7 +1134,7 @@ with st.sidebar:
     with water_col1:
         current_water = st.session_state.daily_totals.get('water', 0)
         water_percent = min(100, (current_water / 2000) * 100)
-        st.metric("Today's Water", f"{current_water}ml", f"{water_percent:.0f}%")
+        st.metric("Today", f"{current_water}ml", f"{water_percent:.0f}%")
     
     with water_col2:
         water_to_add = st.selectbox("Add water", [250, 500, 750, 1000], index=0)
