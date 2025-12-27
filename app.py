@@ -639,12 +639,46 @@ st.markdown('<p class="slogan">Scan • Track • Grow</p>', unsafe_allow_html=T
 def analyze_food_with_gemini(food_input, image=None):
     """PROPER Gemini AI Analysis"""
     
-    # SECURE: Get API key from Streamlit Secrets
+    # Try multiple secure sources
+    api_key = None
+    
+    # 1. GitHub Actions injected secret (for deployment)
     try:
-        api_key = st.secrets["GEMINI_API_KEY"]
+        if hasattr(st, 'secrets') and 'GEMINI_API_KEY' in st.secrets:
+            api_key = st.secrets["GEMINI_API_KEY"]
     except:
-        # If secrets not available, show error
-        st.error("🔐 API key not configured. Please configure secrets.")
+        pass
+    
+    # 2. Environment variable (for local/dev)
+    if not api_key:
+        import os
+        api_key = os.environ.get("GEMINI_API_KEY")
+        
+        # If env var not set, try to load from .env file
+        if not api_key:
+            try:
+                from dotenv import load_dotenv
+                load_dotenv()
+                api_key = os.environ.get("GEMINI_API_KEY")
+            except:
+                pass
+    
+    # 3. If still not found, show user how to set it up
+    if not api_key:
+        st.warning("""
+        🔐 **API Key Required for AI Analysis**
+        
+        **For Local Development:**
+        1. Create `.env` file in project root
+        2. Add: `GEMINI_API_KEY=your_key_here`
+        
+        **For Deployment:**
+        1. Add secret in GitHub: Settings → Secrets → Actions
+        2. Name: `GEMINI_API_KEY`
+        3. Value: Your Google AI key
+        
+        Using fallback database for now.
+        """)
         return get_fallback_nutrition(food_input)
     
     # Show AI thinking message
