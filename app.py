@@ -1,4 +1,4 @@
-# app.py - NutriMind with PROPER Gemini AI 2.5 Flash Lite
+# app.py - NutriMind Modern React-Style UI
 import streamlit as st
 import pandas as pd
 import plotly.express as px
@@ -12,7 +12,10 @@ import base64
 import requests
 import re
 
-# ========== CRITICAL: Initialize ALL session state at TOP ==========
+# ========== INITIALIZE SESSION STATE ==========
+if 'page' not in st.session_state:
+    st.session_state.page = "landing"
+    
 if 'app_initialized' not in st.session_state:
     st.session_state.app_initialized = True
     st.session_state.user = None
@@ -39,316 +42,223 @@ if 'app_initialized' not in st.session_state:
     st.session_state.show_success = False
     st.session_state.success_message = ""
 
-# Configure the page
+# Configure page
 st.set_page_config(
     page_title="NutriMind - AI Nutrition Assistant",
-    page_icon="📊",
+    page_icon="🥗",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
-# Custom CSS for dark teal theme
+# ========== MODERN REACT-STYLE CSS ==========
 st.markdown("""
 <style>
-    /* Dark Teal Theme Variables */
+    /* === MODERN HEALTH THEME === */
     :root {
-        --teal-primary: #006D6F;
-        --teal-secondary: #008080;
-        --teal-light: #00A0A0;
-        --teal-dark: #004D4F;
-        --teal-accent: #00C9C9;
-        --bg-dark: #0A1929;
-        --bg-card: #132F4C;
-        --text-primary: #E6F7FF;
-        --text-secondary: #B3D9FF;
-        --border-color: #006D6F;
+        --primary: #00B894;
+        --primary-dark: #00A08A;
+        --accent: #00FFD4;
+        --secondary: #0984E3;
+        --light: #E8FFF7;
+        --background: #F8FDFC;
+        --card: #FFFFFF;
+        --text: #2D3436;
+        --text-light: #636E72;
+        --border: #E0E0E0;
+        --error: #D63031;
+        --warning: #FDCB6E;
+        --success: #00B894;
+        --shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        --shadow-hover: 0 8px 30px rgba(0, 184, 148, 0.15);
     }
     
-    /* Main Header with teal gradient */
-    .main-header {
+    /* Main App */
+    .stApp {
+        background: var(--background);
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+    
+    /* Modern Header */
+    .modern-header {
         font-size: 3rem;
+        font-weight: 800;
         text-align: center;
-        margin-bottom: 1rem;
-        background: linear-gradient(135deg, #00C9C9 0%, #006D6F 25%, #008080 50%, #00A0A0 75%, #004D4F 100%);
+        margin: 2rem 0 1rem;
+        background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         background-clip: text;
-        font-weight: 800;
         letter-spacing: -0.5px;
-        padding: 10px 0;
     }
     
-    .nutri-card {
-        background: linear-gradient(135deg, #004D4F 0%, #006D6F 100%);
-        color: var(--text-primary);
-        padding: 1.5rem;
-        border-radius: 15px;
-        margin-bottom: 1rem;
-        box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-        border: 1px solid var(--border-color);
+    /* Cards */
+    .modern-card {
+        background: var(--card);
+        border-radius: 20px;
+        padding: 24px;
+        margin-bottom: 20px;
+        box-shadow: var(--shadow);
+        border: 1px solid var(--border);
+        transition: transform 0.2s, box-shadow 0.2s;
     }
     
-    .scan-option {
-        text-align: center;
-        padding: 20px;
-        border: 2px dashed #00C9C9;
-        border-radius: 10px;
-        margin: 10px 0;
-        transition: all 0.3s;
-        background: var(--bg-card);
-        color: var(--text-primary);
-        border-color: var(--teal-accent);
+    .modern-card:hover {
+        transform: translateY(-4px);
+        box-shadow: var(--shadow-hover);
     }
     
-    /* Food log items with teal theme */
-    .food-log-item {
-        background: linear-gradient(135deg, #004D4F 0%, #006D6F 100%);
-        padding: 15px;
-        border-radius: 10px;
-        margin: 10px 0;
-        border-left: 4px solid #00C9C9;
-        box-shadow: 0 2px 10px rgba(0,0,0,0.2);
-        color: var(--text-primary) !important;
-        border: 1px solid var(--border-color);
-    }
-    
-    /* Exercise log items with teal theme */
-    .exercise-log-item {
-        background: linear-gradient(135deg, #004D4F 0%, #006D6F 100%);
-        padding: 15px;
-        border-radius: 10px;
-        margin: 10px 0;
-        border-left: 4px solid #00A0A0;
-        box-shadow: 0 2px 10px rgba(0,0,0,0.2);
-        color: var(--text-primary) !important;
-        border: 1px solid var(--border-color);
-    }
-    
-    /* Fix for text colors */
-    .stMarkdown h1, .stMarkdown h2, .stMarkdown h3, .stMarkdown p, .stMarkdown div {
-        color: var(--text-primary) !important;
-    }
-    
-    .slogan {
-        text-align: center;
-        font-size: 1.2rem;
-        color: #00C9C9;
-        font-weight: 600;
-        letter-spacing: 1px;
-        margin: 10px 0 30px 0;
-    }
-    
-    .success-toast {
-        background: linear-gradient(135deg, #006D6F 0%, #00A0A0 100%);
-        color: var(--text-primary);
-        padding: 15px;
-        border-radius: 10px;
-        margin: 10px 0;
-        animation: fadeIn 0.5s;
-        box-shadow: 0 4px 12px rgba(0, 201, 201, 0.3);
-        border: 1px solid var(--teal-accent);
-    }
-    
-    .ai-thinking {
-        background: linear-gradient(135deg, #004D4F 0%, #006D6F 100%);
-        padding: 15px;
-        border-radius: 10px;
-        margin: 10px 0;
-        border-left: 4px solid #00C9C9;
-        color: var(--text-primary);
-        border: 1px solid var(--border-color);
-    }
-    
-    /* MEAL SUGGESTION CARD - FIXED FOR DARK MODE */
-    .meal-suggestion-card {
-        padding: 15px;
-        background: linear-gradient(135deg, #004D4F 0%, #006D6F 100%);
-        border-radius: 10px;
-        margin: 10px 0;
-        border-left: 4px solid #00C9C9;
-        border: 1px solid var(--border-color);
-    }
-    
-    .meal-suggestion-card strong {
-        color: #FFFFFF !important;
-        font-size: 1.1em;
-    }
-    
-    .meal-suggestion-card small {
-        color: #B3D9FF !important;
-    }
-    
-    @keyframes fadeIn {
-        from { opacity: 0; transform: translateY(-10px); }
-        to { opacity: 1; transform: translateY(0); }
-    }
-    
-    /* Progress bars with teal theme */
-    .stProgress > div > div > div > div {
-        background-color: #00C9C9;
-    }
-    
-    /* Buttons with teal theme */
+    /* Buttons */
     .stButton > button {
-        background: linear-gradient(135deg, #006D6F 0%, #008080 100%);
-        color: white;
-        border: 1px solid #00A0A0;
+        background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%) !important;
+        color: white !important;
+        border: none !important;
+        border-radius: 12px !important;
+        padding: 14px 28px !important;
+        font-weight: 600 !important;
+        font-size: 16px !important;
+        transition: all 0.2s !important;
+        box-shadow: 0 4px 12px rgba(0, 184, 148, 0.2) !important;
     }
     
     .stButton > button:hover {
-        background: linear-gradient(135deg, #008080 0%, #00A0A0 100%);
-        border-color: #00C9C9;
+        transform: translateY(-2px) !important;
+        box-shadow: 0 6px 20px rgba(0, 184, 148, 0.3) !important;
     }
     
-    /* Sidebar styling */
-    .css-1d391kg, .css-1lcbmhc {
-        background-color: var(--bg-dark);
+    /* Secondary Button */
+    .secondary-btn {
+        background: white !important;
+        color: var(--primary) !important;
+        border: 2px solid var(--primary) !important;
     }
     
-    /* Metric cards */
-    .stMetric {
-        background: linear-gradient(135deg, #004D4F 0%, #006D6F 100%);
-        padding: 10px;
-        border-radius: 10px;
-        border: 1px solid var(--border-color);
+    /* Stats Cards */
+    .stat-card {
+        background: var(--card);
+        border-radius: 16px;
+        padding: 20px;
+        border-left: 6px solid var(--primary);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+        text-align: center;
     }
     
-    /* Radio buttons with teal theme */
-    .stRadio > div {
-        background: var(--bg-card);
-        padding: 10px;
-        border-radius: 10px;
-        border: 1px solid var(--border-color);
+    .stat-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 24px;
+        margin: 0 auto 12px;
     }
     
-    /* Selectbox and slider styling */
-    .stSelectbox, .stSlider {
-        background: var(--bg-card);
+    /* Progress Bars */
+    .stProgress > div > div > div > div {
+        background: linear-gradient(90deg, var(--primary), var(--accent)) !important;
+        border-radius: 10px !important;
     }
     
-    /* Ensure text is visible in all modes */
-    div[data-testid="stVerticalBlock"] > div > div > div > div {
-        color: var(--text-primary) !important;
-    }
-    
-    /* Main background */
-    .stApp {
-        background-color: var(--bg-dark);
-    }
-    
-    /* Tab styling */
+    /* Tabs */
     .stTabs [data-baseweb="tab-list"] {
         gap: 8px;
     }
     
     .stTabs [data-baseweb="tab"] {
-        background: linear-gradient(135deg, #004D4F 0%, #006D6F 100%);
-        border-radius: 8px 8px 0 0;
-        border: 1px solid var(--border-color);
-        color: var(--text-primary);
+        background: var(--card) !important;
+        border-radius: 12px 12px 0 0 !important;
+        border: 1px solid var(--border) !important;
+        padding: 12px 24px !important;
+        font-weight: 500 !important;
     }
     
     .stTabs [aria-selected="true"] {
-        background: linear-gradient(135deg, #006D6F 0%, #008080 100%) !important;
+        background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%) !important;
         color: white !important;
-        border-bottom: 2px solid #00C9C9 !important;
+        border-bottom: 3px solid var(--accent) !important;
     }
     
-    /* Input fields */
+    /* Input Fields */
     .stTextInput > div > div > input,
     .stNumberInput > div > div > input,
     .stSelectbox > div > div > div {
-        background: var(--bg-card);
-        color: var(--text-primary);
-        border-color: var(--border-color);
+        background: var(--card) !important;
+        border: 2px solid var(--border) !important;
+        border-radius: 12px !important;
+        padding: 12px 16px !important;
     }
     
-    /* File uploader */
-    .stFileUploader > div > div {
-        background: var(--bg-card);
-        border-color: var(--border-color);
+    /* Metrics */
+    .stMetric {
+        background: var(--card) !important;
+        border: 1px solid var(--border) !important;
+        border-radius: 16px !important;
+        padding: 20px !important;
+        box-shadow: var(--shadow) !important;
     }
     
-    /* Info boxes */
-    .stInfo {
-        background: linear-gradient(135deg, #004D4F 0%, #006D6F 100%);
-        border-left: 4px solid #00C9C9;
-        color: var(--text-primary);
-        border: 1px solid var(--border-color);
+    /* Success Toast */
+    .success-toast {
+        background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%) !important;
+        color: white !important;
+        padding: 16px 24px !important;
+        border-radius: 12px !important;
+        margin: 16px 0 !important;
+        animation: slideIn 0.3s ease !important;
+        box-shadow: 0 8px 24px rgba(0, 184, 148, 0.3) !important;
     }
     
-    /* Warning boxes */
-    .stWarning {
-        background: linear-gradient(135deg, #4D3C00 0%, #6F5D00 100%);
-        border-left: 4px solid #FFD700;
-        color: var(--text-primary);
-        border: 1px solid #FFD700;
+    @keyframes slideIn {
+        from { opacity: 0; transform: translateY(-20px); }
+        to { opacity: 1; transform: translateY(0); }
     }
     
-    /* Success boxes */
-    .stSuccess {
-        background: linear-gradient(135deg, #004D2E 0%, #006D47 100%);
-        border-left: 4px solid #00FF95;
-        color: var(--text-primary);
-        border: 1px solid #00FF95;
+    /* Navigation Sidebar */
+    [data-testid="stSidebar"] {
+        background: var(--card) !important;
+        border-right: 1px solid var(--border) !important;
     }
     
-    /* Plotly chart background */
-    .js-plotly-plot .plotly, .modebar {
-        background-color: var(--bg-card) !important;
+    /* Hide Streamlit Branding */
+    #MainMenu {visibility: hidden;}
+    footer {visibility: hidden;}
+    header {visibility: hidden;}
+    
+    /* Mobile Responsive */
+    @media (max-width: 768px) {
+        .modern-header {
+            font-size: 2rem;
+        }
+        .modern-card {
+            padding: 16px;
+        }
     }
 </style>
 """, unsafe_allow_html=True)
 
-# App title
-st.markdown('<h1 class="main-header">NutriMind</h1>', unsafe_allow_html=True)
-st.markdown('<p class="slogan">Scan • Track • Grow</p>', unsafe_allow_html=True)
-
-# ========== PROPER GEMINI AI FUNCTION ==========
+# ========== BACKEND FUNCTIONS (KEEP YOUR EXISTING LOGIC) ==========
 def analyze_food_with_gemini(food_input, image=None):
-    """PROPER Gemini AI Analysis - Get your API key from: https://makersuite.google.com/app/apikey"""
-    
-    # ⭐⭐⭐ GET YOUR API KEY FROM: https://makersuite.google.com/app/apikey ⭐⭐⭐
-    # ⭐⭐⭐ REPLACE THIS WITH YOUR ACTUAL API KEY ⭐⭐⭐
+    """PROPER Gemini AI Analysis"""
     api_key = "AIzaSyCUFEN7loZiJxffZfG3AubcIRarpigeGUY"
     
-    # Show AI thinking message
     thinking_placeholder = st.empty()
-    thinking_placeholder.markdown('<div class="ai-thinking">🤖 AI is analyzing your food... Please wait</div>', unsafe_allow_html=True)
+    thinking_placeholder.markdown('<div class="modern-card">🤖 AI is analyzing your food...</div>', unsafe_allow_html=True)
     
     try:
-        # Check if API key is valid
         if not api_key or "AIzaSy" not in api_key:
             thinking_placeholder.empty()
-            st.error("❌ Invalid API key. Please get a new one from: https://makersuite.google.com/app/apikey")
+            st.error("❌ Invalid API key")
             return get_fallback_nutrition(food_input)
         
-        # Prepare the prompt
         if image:
-            # Convert image to base64
             buffered = io.BytesIO()
             if image.mode != 'RGB':
                 image = image.convert('RGB')
             image.save(buffered, format="JPEG", quality=90)
             img_str = base64.b64encode(buffered.getvalue()).decode()
             
-            prompt = """You are a nutrition expert. Analyze this food image and provide accurate information.
-            
-            IMPORTANT: Return ONLY a JSON object in this exact format:
-            {
-                "food_name": "Exact name of the food dish",
-                "calories": number,
-                "protein": number,
-                "carbs": number,
-                "fats": number,
-                "insight": "Brief nutritional insight"
-            }
-            
-            Rules:
-            1. Identify the specific food name (e.g., "Masala Dosa", "Butter Chicken", "Cheese Pizza")
-            2. Provide realistic nutrition values
-            3. Keep insight brief and helpful
-            4. Return ONLY the JSON, no other text"""
+            prompt = """You are a nutrition expert. Analyze this food image.
+            Return ONLY JSON: {"food_name": "...", "calories": number, "protein": number, "carbs": number, "fats": number, "insight": "..."}"""
             
             payload = {
                 "contents": [{
@@ -369,18 +279,7 @@ def analyze_food_with_gemini(food_input, image=None):
             }
         else:
             prompt = f"""Analyze this food: {food_input}
-            
-            Provide nutrition facts in this EXACT JSON format:
-            {{
-                "food_name": "Specific name of the food",
-                "calories": number,
-                "protein": number,
-                "carbs": number,
-                "fats": number,
-                "insight": "Brief nutritional insight"
-            }}
-            
-            IMPORTANT: Return ONLY the JSON object, no additional text."""
+            Return ONLY JSON: {{"food_name": "...", "calories": number, "protein": number, "carbs": number, "fats": number, "insight": "..."}}"""
             
             payload = {
                 "contents": [{
@@ -392,7 +291,6 @@ def analyze_food_with_gemini(food_input, image=None):
                 }
             }
         
-        # Make API request
         response = requests.post(
             f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key={api_key}",
             json=payload,
@@ -404,39 +302,29 @@ def analyze_food_with_gemini(food_input, image=None):
         
         if response.status_code == 200:
             result = response.json()
-            
             if "candidates" in result and len(result["candidates"]) > 0:
                 response_text = result["candidates"][0]["content"]["parts"][0]["text"]
-                
-                # Clean the response
                 response_text = response_text.strip()
                 
-                # Remove markdown code blocks
                 if response_text.startswith("```json"):
                     response_text = response_text[7:]
                 if response_text.endswith("```"):
                     response_text = response_text[:-3]
                 response_text = response_text.strip()
                 
-                # Extract JSON using regex
                 json_match = re.search(r'\{.*\}', response_text, re.DOTALL)
-                
                 if json_match:
                     try:
                         nutrition_data = json.loads(json_match.group())
-                        
-                        # Validate required fields
                         if "food_name" in nutrition_data:
-                            # Ensure all fields exist
                             required_fields = ["calories", "protein", "carbs", "fats", "insight"]
                             for field in required_fields:
                                 if field not in nutrition_data:
                                     if field == "insight":
-                                        nutrition_data[field] = "Nutrition information provided by AI analysis"
+                                        nutrition_data[field] = "Nutrition information provided by AI"
                                     else:
                                         nutrition_data[field] = 0
                             
-                            # Convert to integers
                             for field in ["calories", "protein", "carbs", "fats"]:
                                 try:
                                     nutrition_data[field] = int(float(nutrition_data[field]))
@@ -445,141 +333,87 @@ def analyze_food_with_gemini(food_input, image=None):
                             
                             st.success(f"✅ AI Detected: **{nutrition_data['food_name']}**")
                             return nutrition_data
-                    except json.JSONDecodeError as e:
-                        st.warning("⚠️ Could not parse AI response. Using fallback.")
+                    except json.JSONDecodeError:
+                        st.warning("⚠️ Could not parse AI response")
         
-        # Handle API errors
         if response.status_code == 403:
-            st.error("""
-            ❌ **API Error 403: Invalid API Key**
-            
-            Your API key is invalid or disabled. Please:
-            1. Get a NEW API key from: https://makersuite.google.com/app/apikey
-            2. Replace the api_key in line 87 of this code
-            3. Make sure "Generative Language API" is enabled at: https://console.cloud.google.com/apis/library
-            """)
+            st.error("❌ API key invalid. Get new one: https://makersuite.google.com/app/apikey")
         elif response.status_code == 429:
-            st.error("❌ API quota exceeded. Try again in a few minutes.")
+            st.error("❌ API quota exceeded. Try again later.")
         else:
-            st.warning(f"⚠️ API Error {response.status_code}. Using fallback database.")
+            st.warning(f"⚠️ API Error {response.status_code}")
         
-        # Fallback to database
         return get_fallback_nutrition(food_input)
         
     except requests.exceptions.Timeout:
         thinking_placeholder.empty()
-        st.warning("⚠️ AI analysis timed out. Using fallback database.")
+        st.warning("⚠️ AI analysis timed out")
         return get_fallback_nutrition(food_input)
     except Exception as e:
         thinking_placeholder.empty()
-        st.warning(f"⚠️ Error: {str(e)[:100]}. Using fallback.")
+        st.warning(f"⚠️ Error: {str(e)[:100]}")
         return get_fallback_nutrition(food_input)
 
 def get_fallback_nutrition(food_name):
-    """Fallback nutrition database when API fails"""
+    """Fallback nutrition database"""
     food_db = {
-        "dosa": {"food_name": "Masala Dosa", "calories": 200, "protein": 4, "carbs": 30, "fats": 6, "insight": "South Indian fermented crepe with potato filling"},
-        "idli": {"food_name": "Idli", "calories": 60, "protein": 2, "carbs": 12, "fats": 0.5, "insight": "Steamed rice cake, easily digestible"},
-        "vada": {"food_name": "Medu Vada", "calories": 150, "protein": 3, "carbs": 20, "fats": 7, "insight": "Lentil doughnut, deep fried"},
-        "poha": {"food_name": "Poha", "calories": 250, "protein": 6, "carbs": 45, "fats": 5, "insight": "Flattened rice breakfast dish"},
-        "upma": {"food_name": "Upma", "calories": 200, "protein": 5, "carbs": 35, "fats": 6, "insight": "Semolina breakfast porridge"},
-        "chapati": {"food_name": "Chapati", "calories": 70, "protein": 3, "carbs": 15, "fats": 0.4, "insight": "Whole wheat Indian flatbread"},
-        "roti": {"food_name": "Roti", "calories": 70, "protein": 3, "carbs": 15, "fats": 0.4, "insight": "Indian flatbread made from whole wheat"},
-        "paratha": {"food_name": "Aloo Paratha", "calories": 300, "protein": 8, "carbs": 45, "fats": 10, "insight": "Stuffed flatbread with potatoes"},
-        "rice": {"food_name": "Steamed Rice", "calories": 205, "protein": 4.3, "carbs": 45, "fats": 0.4, "insight": "Good source of carbohydrates"},
-        "biryani": {"food_name": "Chicken Biryani", "calories": 500, "protein": 25, "carbs": 60, "fats": 20, "insight": "Flavorful rice dish with meat and spices"},
-        "pulao": {"food_name": "Vegetable Pulao", "calories": 300, "protein": 6, "carbs": 55, "fats": 8, "insight": "Vegetable rice pilaf"},
-        "butter chicken": {"food_name": "Butter Chicken", "calories": 450, "protein": 30, "carbs": 15, "fats": 30, "insight": "Creamy tomato-based chicken curry"},
-        "paneer butter": {"food_name": "Paneer Butter Masala", "calories": 400, "protein": 22, "carbs": 20, "fats": 25, "insight": "Creamy cottage cheese curry"},
-        "chicken curry": {"food_name": "Chicken Curry", "calories": 350, "protein": 25, "carbs": 10, "fats": 20, "insight": "Spicy chicken in gravy"},
-        "dal": {"food_name": "Dal Tadka", "calories": 150, "protein": 9, "carbs": 22, "fats": 4, "insight": "Tempered lentil soup, rich in protein"},
-        "sambar": {"food_name": "Sambar", "calories": 100, "protein": 5, "carbs": 18, "fats": 3, "insight": "South Indian lentil stew with vegetables"},
-        "banana": {"food_name": "Banana", "calories": 105, "protein": 1.3, "carbs": 27, "fats": 0.3, "insight": "Rich in potassium and quick energy"},
-        "apple": {"food_name": "Apple", "calories": 95, "protein": 0.5, "carbs": 25, "fats": 0.3, "insight": "High in fiber and antioxidants"},
-        "orange": {"food_name": "Orange", "calories": 62, "protein": 1.2, "carbs": 15, "fats": 0.2, "insight": "Excellent source of Vitamin C"},
-        "mango": {"food_name": "Mango", "calories": 150, "protein": 1.1, "carbs": 40, "fats": 0.6, "insight": "Rich in Vitamin A and C"},
-        "grapes": {"food_name": "Grapes", "calories": 69, "protein": 0.7, "carbs": 18, "fats": 0.2, "insight": "Natural sugars with antioxidants"},
-        "egg": {"food_name": "Egg (Boiled)", "calories": 78, "protein": 6, "carbs": 0.6, "fats": 5, "insight": "Complete protein with all essential amino acids"},
-        "chicken": {"food_name": "Chicken Breast", "calories": 165, "protein": 31, "carbs": 0, "fats": 3.6, "insight": "Lean protein for muscle building"},
-        "fish": {"food_name": "Fish (Grilled)", "calories": 206, "protein": 22, "carbs": 0, "fats": 12, "insight": "Rich in Omega-3 fatty acids"},
-        "paneer": {"food_name": "Paneer", "calories": 265, "protein": 18, "carbs": 1.2, "fats": 20, "insight": "Indian cottage cheese, high in calcium"},
-        "tofu": {"food_name": "Tofu", "calories": 76, "protein": 8, "carbs": 2, "fats": 4, "insight": "Plant-based protein from soy"},
-        "pizza": {"food_name": "Pizza Slice", "calories": 285, "protein": 12, "carbs": 36, "fats": 10, "insight": "Contains carbs, protein and fats"},
-        "burger": {"food_name": "Cheese Burger", "calories": 354, "protein": 15, "carbs": 29, "fats": 20, "insight": "Fast food with moderate protein"},
-        "samosa": {"food_name": "Samosa", "calories": 300, "protein": 4, "carbs": 35, "fats": 16, "insight": "Fried pastry with potato filling"},
-        "pakora": {"food_name": "Pakora", "calories": 200, "protein": 5, "carbs": 20, "fats": 10, "insight": "Vegetable fritters, deep fried"},
-        "milk": {"food_name": "Milk (1 cup)", "calories": 150, "protein": 8, "carbs": 12, "fats": 8, "insight": "Rich in calcium and protein"},
-        "curd": {"food_name": "Curd/Yogurt", "calories": 150, "protein": 8, "carbs": 11, "fats": 8, "insight": "Probiotic-rich for gut health"},
-        "cheese": {"food_name": "Cheese", "calories": 113, "protein": 7, "carbs": 1, "fats": 9, "insight": "High in calcium and protein"},
-        "smoothie": {"food_name": "Fruit Smoothie", "calories": 200, "protein": 8, "carbs": 30, "fats": 5, "insight": "Blended fruits with nutrients"},
-        "juice": {"food_name": "Orange Juice", "calories": 112, "protein": 2, "carbs": 26, "fats": 0.5, "insight": "Vitamin C rich beverage"},
-        "coffee": {"food_name": "Coffee", "calories": 2, "protein": 0.3, "carbs": 0, "fats": 0, "insight": "Low calorie caffeine source"},
-        "tea": {"food_name": "Tea", "calories": 2, "protein": 0, "carbs": 0.5, "fats": 0, "insight": "Low calorie beverage with antioxidants"},
-        "bread": {"food_name": "Bread Slice", "calories": 79, "protein": 3, "carbs": 15, "fats": 1, "insight": "Basic carbohydrate source"},
-        "pasta": {"food_name": "Pasta", "calories": 220, "protein": 8, "carbs": 43, "fats": 1, "insight": "Carb-rich Italian dish"},
-        "sandwich": {"food_name": "Vegetable Sandwich", "calories": 250, "protein": 8, "carbs": 40, "fats": 6, "insight": "Quick meal with vegetables"},
-        "salad": {"food_name": "Green Salad", "calories": 100, "protein": 4, "carbs": 15, "fats": 3, "insight": "Healthy vegetable mix"},
-        "rice bowl": {"food_name": "Steamed Rice Bowl", "calories": 240, "protein": 4.5, "carbs": 53, "fats": 0.5, "insight": "Simple carbohydrates for energy"},
-        "chicken salad": {"food_name": "Chicken Salad", "calories": 320, "protein": 35, "carbs": 12, "fats": 15, "insight": "Lean protein with vegetables"},
-        "protein shake": {"food_name": "Protein Shake", "calories": 180, "protein": 25, "carbs": 12, "fats": 3, "insight": "Quick protein supplement"},
-        "oatmeal": {"food_name": "Oatmeal", "calories": 150, "protein": 5, "carbs": 27, "fats": 3, "insight": "High fiber breakfast"},
-        "fried rice": {"food_name": "Vegetable Fried Rice", "calories": 380, "protein": 8, "carbs": 60, "fats": 12, "insight": "Stir-fried rice with vegetables"},
+        "dosa": {"food_name": "Masala Dosa", "calories": 200, "protein": 4, "carbs": 30, "fats": 6},
+        "idli": {"food_name": "Idli", "calories": 60, "protein": 2, "carbs": 12, "fats": 0.5},
+        "poha": {"food_name": "Poha", "calories": 250, "protein": 6, "carbs": 45, "fats": 5},
+        "chapati": {"food_name": "Chapati", "calories": 70, "protein": 3, "carbs": 15, "fats": 0.4},
+        "rice": {"food_name": "Steamed Rice", "calories": 205, "protein": 4.3, "carbs": 45, "fats": 0.4},
+        "biryani": {"food_name": "Chicken Biryani", "calories": 500, "protein": 25, "carbs": 60, "fats": 20},
+        "butter chicken": {"food_name": "Butter Chicken", "calories": 450, "protein": 30, "carbs": 15, "fats": 30},
+        "paneer butter": {"food_name": "Paneer Butter Masala", "calories": 400, "protein": 22, "carbs": 20, "fats": 25},
+        "dal": {"food_name": "Dal Tadka", "calories": 150, "protein": 9, "carbs": 22, "fats": 4},
+        "banana": {"food_name": "Banana", "calories": 105, "protein": 1.3, "carbs": 27, "fats": 0.3},
+        "apple": {"food_name": "Apple", "calories": 95, "protein": 0.5, "carbs": 25, "fats": 0.3},
+        "egg": {"food_name": "Egg (Boiled)", "calories": 78, "protein": 6, "carbs": 0.6, "fats": 5},
+        "chicken": {"food_name": "Chicken Breast", "calories": 165, "protein": 31, "carbs": 0, "fats": 3.6},
+        "pizza": {"food_name": "Pizza Slice", "calories": 285, "protein": 12, "carbs": 36, "fats": 10},
+        "burger": {"food_name": "Cheese Burger", "calories": 354, "protein": 15, "carbs": 29, "fats": 20},
     }
     
-    if not food_name or food_name == "":
+    if not food_name:
         return {
             "food_name": "Food Item",
             "calories": 250,
             "protein": 12,
             "carbs": 30,
             "fats": 8,
-            "insight": "General food item with moderate nutrition"
+            "insight": "General food item"
         }
     
     food_lower = food_name.lower()
-    
-    # Check for exact or partial matches
     for key in food_db:
         if key in food_lower:
+            food_db[key]["insight"] = "From nutrition database"
             return food_db[key]
     
-    # Check for specific Indian food terms
-    if any(term in food_lower for term in ["curry", "masala", "tikka", "korma"]):
-        if "chicken" in food_lower:
-            return food_db["chicken curry"]
-        elif "paneer" in food_lower:
-            return food_db["paneer butter"]
-        elif "egg" in food_lower:
-            return {"food_name": "Egg Curry", "calories": 200, "protein": 15, "carbs": 8, "fats": 12, "insight": "Eggs cooked in spicy gravy"}
-    
-    # Generic fallback
     return {
         "food_name": food_name.title(),
         "calories": random.randint(150, 400),
         "protein": random.randint(5, 25),
         "carbs": random.randint(15, 50),
         "fats": random.randint(5, 20),
-        "insight": "General food item with moderate nutrition"
+        "insight": "Estimated nutrition values"
     }
 
 def get_exercise_suggestions(calories_consumed):
-    """Get exercise suggestions based on calories consumed"""
+    """Get exercise suggestions"""
     exercises = [
         {"name": "Running (8 km/h)", "duration": 30, "calories_per_min": 10},
         {"name": "Cycling (moderate)", "duration": 45, "calories_per_min": 7},
         {"name": "Swimming", "duration": 40, "calories_per_min": 8},
         {"name": "Jumping Rope", "duration": 20, "calories_per_min": 12},
-        {"name": "Weight Training", "duration": 60, "calories_per_min": 6},
         {"name": "Yoga", "duration": 60, "calories_per_min": 4},
         {"name": "Walking (brisk)", "duration": 60, "calories_per_min": 5},
-        {"name": "Dancing", "duration": 45, "calories_per_min": 7},
     ]
     
     adjusted_exercises = []
     for ex in exercises:
         target_calories = calories_consumed * 0.3
         adjusted_duration = min(120, int(target_calories / ex['calories_per_min']))
-        
         if adjusted_duration > 10:
             adjusted_exercises.append({
                 "name": ex['name'],
@@ -587,9 +421,8 @@ def get_exercise_suggestions(calories_consumed):
                 "calories_per_min": ex['calories_per_min']
             })
     
-    return adjusted_exercises[:6]
+    return adjusted_exercises[:4]
 
-# ========== CORE FUNCTIONS ==========
 def calculate_calorie_target(age, gender, activity_level="moderate"):
     if gender == "Male":
         bmr = 10 * 70 + 6.25 * 170 - 5 * age + 5
@@ -597,7 +430,6 @@ def calculate_calorie_target(age, gender, activity_level="moderate"):
         bmr = 10 * 60 + 6.25 * 160 - 5 * age - 161
     
     multipliers = {"sedentary": 1.2, "light": 1.375, "moderate": 1.55, "active": 1.725, "very active": 1.9}
-    
     age_adj = 1.0
     if age < 18: age_adj = 1.2
     elif age < 25: age_adj = 1.1
@@ -617,37 +449,26 @@ def calculate_protein_target(age, gender, calories):
     weight_kg = 70 if gender == "Male" else 60
     return int(weight_kg * protein_per_kg)
 
-def calculate_exercise_target(age):
-    if age < 18: return 60
-    elif age < 30: return 45
-    elif age < 50: return 40
-    elif age < 65: return 35
-    else: return 30
-
-def get_meal_suggestions(meal_time, diet_preference, calories_needed, protein_needed):
-    if diet_preference == "Non-Vegetarian":
-        if meal_time == "Breakfast":
-            return ["🍳 Anda bhurji with pav (280 cal, 18g protein)", "🥚 Boiled eggs with toast (220 cal, 15g protein)", "🍗 Chicken sandwich (350 cal, 25g protein)"]
-        elif meal_time == "Lunch":
-            return ["🍚 Chicken biryani with raita (450 cal, 25g protein)", "🥘 Fish curry with rice (400 cal, 30g protein)", "🍗 Chicken curry with 2 rotis (380 cal, 28g protein)"]
-        else:
-            return ["🐟 Fish fry with dal and rice (420 cal, 32g protein)", "🍗 Chicken tikka masala with naan (480 cal, 35g protein)", "🥘 Mutton curry with jeera rice (500 cal, 30g protein)"]
+def get_meal_suggestions(meal_time, diet_preference):
+    suggestions = {
+        "Non-Vegetarian": {
+            "Breakfast": ["🍳 Anda bhurji with pav (280 cal)", "🥚 Boiled eggs with toast (220 cal)", "🍗 Chicken sandwich (350 cal)"],
+            "Lunch": ["🍚 Chicken biryani with raita (450 cal)", "🥘 Fish curry with rice (400 cal)", "🍗 Chicken curry with roti (380 cal)"],
+            "Dinner": ["🐟 Fish fry with dal and rice (420 cal)", "🍗 Chicken tikka masala with naan (480 cal)", "🥘 Mutton curry with rice (500 cal)"]
+        },
+        "Eggetarian": {
+            "Breakfast": ["🍳 Masala omelette with bread (320 cal)", "🥚 Egg poha (250 cal)", "🧀 Cheese toast with tea (280 cal)"],
+            "Lunch": ["🥚 Egg curry with rice (420 cal)", "🧀 Paneer bhurji with roti (380 cal)", "🍛 Egg biryani (400 cal)"],
+            "Dinner": ["🧀 Paneer tikka with roti (380 cal)", "🥚 Egg fried rice (450 cal)", "🍛 Dal makhani with naan (420 cal)"]
+        },
+        "Vegetarian": {
+            "Breakfast": ["🥣 Poha with peanuts (280 cal)", "🧀 Aloo paratha with curd (350 cal)", "🥛 Besan chilla with chutney (250 cal)"],
+            "Lunch": ["🧀 Paneer butter masala with roti (480 cal)", "🥗 Rajma chawal (450 cal)", "🍛 Chole bhature (500 cal)"],
+            "Dinner": ["🧀 Palak paneer with roti (380 cal)", "🥘 Mixed vegetable curry with rice (350 cal)", "🍛 Sambar rice with papad (320 cal)"]
+        }
+    }
     
-    elif diet_preference == "Eggetarian":
-        if meal_time == "Breakfast":
-            return ["🍳 Masala omelette with bread (320 cal, 22g protein)", "🥚 Egg poha (250 cal, 12g protein)", "🧀 Cheese toast with tea (280 cal, 15g protein)"]
-        elif meal_time == "Lunch":
-            return ["🥚 Egg curry with jeera rice (420 cal, 24g protein)", "🧀 Paneer bhurji with roti (380 cal, 20g protein)", "🍛 Egg biryani (400 cal, 22g protein)"]
-        else:
-            return ["🧀 Paneer tikka with roti (380 cal, 25g protein)", "🥚 Egg fried rice with manchurian (450 cal, 20g protein)", "🍛 Dal makhani with naan (420 cal, 18g protein)"]
-    
-    else:
-        if meal_time == "Breakfast":
-            return ["🥣 Poha with peanuts (280 cal, 10g protein)", "🧀 Aloo paratha with curd (350 cal, 12g protein)", "🥛 Besan chilla with chutney (250 cal, 15g protein)"]
-        elif meal_time == "Lunch":
-            return ["🧀 Paneer butter masala with 2 rotis (480 cal, 22g protein)", "🥗 Rajma chawal (450 cal, 18g protein)", "🍛 Chole bhature (500 cal, 15g protein)"]
-        else:
-            return ["🧀 Palak paneer with roti (380 cal, 20g protein)", "🥘 Mixed vegetable curry with rice (350 cal, 12g protein)", "🍛 Sambar rice with papad (320 cal, 10g protein)"]
+    return suggestions.get(diet_preference, suggestions["Vegetarian"]).get(meal_time, [])
 
 def save_food_to_session(food_data):
     try:
@@ -666,11 +487,11 @@ def save_food_to_session(food_data):
         st.session_state.daily_totals['fats'] += food_data.get('fats', 0)
         
         st.session_state.show_success = True
-        st.session_state.success_message = f"✅ {food_data.get('food_name', 'Food')} saved successfully!"
+        st.session_state.success_message = f"✅ {food_data.get('food_name', 'Food')} saved!"
         
         return True
     except Exception as e:
-        st.error(f"Error saving food: {e}")
+        st.error(f"Error: {e}")
         return False
 
 def save_exercise_to_session(exercise_data):
@@ -682,51 +503,419 @@ def save_exercise_to_session(exercise_data):
         st.session_state.daily_totals['calories_burned'] += exercise_data.get('calories_burned', 0)
         return True
     except Exception as e:
-        st.error(f"Error saving exercise: {e}")
+        st.error(f"Error: {e}")
         return False
 
-# ========== SIDEBAR ==========
-with st.sidebar:
-    st.markdown("## 👤 User Profile")
+# ========== REACT-STYLE PAGES ==========
+def render_landing_page():
+    """React Landing Page"""
+    st.markdown('<h1 class="modern-header">NutriMind</h1>', unsafe_allow_html=True)
+    st.markdown('<p style="text-align: center; color: var(--text-light); font-size: 1.2rem; margin-bottom: 40px;">Scan • Track • Grow</p>', unsafe_allow_html=True)
+    
+    # Features Grid
+    col1, col2, col3 = st.columns(3)
+    
+    with col1:
+        st.markdown("""
+        <div class="modern-card" style="text-align: center;">
+            <div style="font-size: 3rem; margin-bottom: 16px;">📸</div>
+            <h3>AI Food Scanner</h3>
+            <p style="color: var(--text-light);">Upload food photos for instant nutrition analysis</p>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    with col2:
+        st.markdown("""
+        <div class="modern-card" style="text-align: center;">
+            <div style="font-size: 3rem; margin-bottom: 16px;">📊</div>
+            <h3>Smart Tracking</h3>
+            <p style="color: var(--text-light);">Track your food intake and exercise with detailed analytics</p>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    with col3:
+        st.markdown("""
+        <div class="modern-card" style="text-align: center;">
+            <div style="font-size: 3rem; margin-bottom: 16px;">🥗</div>
+            <h3>Personalized Recommendations</h3>
+            <p style="color: var(--text-light);">Get meal suggestions based on your diet preference</p>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    # Buttons
+    col1, col2, col3 = st.columns([1, 2, 1])
+    with col2:
+        if st.button("🚀 Get Started", use_container_width=True, type="primary"):
+            st.session_state.page = "dashboard"
+            st.rerun()
+        
+        if st.button("👤 Demo Mode", use_container_width=True, type="secondary"):
+            st.session_state.user = {
+                'name': "Demo User",
+                'age': 25,
+                'gender': "Male",
+                'activity_level': "moderate",
+                'joined': datetime.now().strftime("%Y-%m-%d")
+            }
+            st.session_state.goals = {
+                'calories': 2000,
+                'protein': 50,
+                'carbs': 250,
+                'fats': 65,
+                'exercise_minutes': 30
+            }
+            st.session_state.page = "dashboard"
+            st.rerun()
+
+def render_dashboard():
+    """React Dashboard Page"""
+    if st.session_state.user is None:
+        st.warning("Please create a profile first")
+        render_landing_page()
+        return
+    
+    # Header
+    col1, col2 = st.columns([3, 1])
+    with col1:
+        st.markdown(f"# 👋 Welcome back, {st.session_state.user['name']}!")
+        st.markdown(f"*Today is {datetime.now().strftime('%A, %B %d')}*")
+    
+    with col2:
+        if st.button("👤 Profile", use_container_width=True):
+            st.session_state.page = "profile"
+            st.rerun()
+    
+    # Success Message
+    if st.session_state.show_success:
+        st.markdown(f'<div class="success-toast">{st.session_state.success_message}</div>', unsafe_allow_html=True)
+        st.session_state.show_success = False
+    
+    # Quick Stats
+    st.markdown("## 📊 Today's Summary")
+    
+    row1 = st.columns(3)
+    with row1[0]:
+        calories_percent = min(100, (st.session_state.daily_totals['calories'] / st.session_state.goals['calories']) * 100)
+        st.metric("🔥 Calories", f"{st.session_state.daily_totals['calories']}", f"{calories_percent:.0f}% of goal")
+    
+    with row1[1]:
+        protein_percent = min(100, (st.session_state.daily_totals['protein'] / st.session_state.goals['protein']) * 100)
+        st.metric("💪 Protein", f"{st.session_state.daily_totals['protein']}g", f"{protein_percent:.0f}% of goal")
+    
+    with row1[2]:
+        exercise_percent = min(100, (len(st.session_state.exercise_logs) * 30 / st.session_state.goals['exercise_minutes']) * 100)
+        st.metric("🏃 Exercise", f"{len(st.session_state.exercise_logs)} sessions", f"{exercise_percent:.0f}% of goal")
+    
+    # Quick Actions
+    st.markdown("## ⚡ Quick Actions")
+    col1, col2 = st.columns(2)
+    with col1:
+        if st.button("📸 Log Food", use_container_width=True, type="primary"):
+            st.session_state.page = "log_food"
+            st.rerun()
+    
+    with col2:
+        if st.button("🏋️ Log Exercise", use_container_width=True, type="primary"):
+            st.session_state.page = "exercise"
+            st.rerun()
+    
+    # Recent Activity
+    st.markdown("## 📝 Recent Activity")
+    
+    col1, col2 = st.columns(2)
+    with col1:
+        st.markdown("### 🍽️ Recent Meals")
+        if st.session_state.food_logs:
+            for log in st.session_state.food_logs[-3:]:
+                st.markdown(f"""
+                <div class="modern-card">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <strong>{log.get('food_name', 'Food')}</strong><br>
+                            <small>🔥 {log.get('calories', 0)} cal • 💪 {log.get('protein', 0)}g protein</small>
+                        </div>
+                        <small style="color: var(--text-light);">{log.get('time', '')}</small>
+                    </div>
+                </div>
+                """, unsafe_allow_html=True)
+        else:
+            st.info("No meals logged yet")
+    
+    with col2:
+        st.markdown("### 🏃 Recent Exercise")
+        if st.session_state.exercise_logs:
+            for log in st.session_state.exercise_logs[-3:]:
+                st.markdown(f"""
+                <div class="modern-card">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <strong>{log.get('name', 'Exercise')}</strong><br>
+                            <small>⏱️ {log.get('duration', 0)} min • 🔥 {log.get('calories_burned', 0)} cal</small>
+                        </div>
+                        <small style="color: var(--text-light);">{log.get('time', '')}</small>
+                    </div>
+                </div>
+                """, unsafe_allow_html=True)
+        else:
+            st.info("No exercise logged yet")
+
+def render_log_food():
+    """React Food Logging Page"""
+    st.markdown("# 📸 Log Food")
+    
+    # Back button
+    if st.button("← Back to Dashboard"):
+        st.session_state.page = "dashboard"
+        st.rerun()
+    
+    # Scan Options
+    option = st.radio("Choose method:", 
+                     ["📷 Camera Scan", "🏷️ Label Scan", "📝 Manual Entry"],
+                     horizontal=True)
+    
+    if option == "📷 Camera Scan":
+        st.markdown("### Take a photo of your meal")
+        uploaded_image = st.file_uploader("Upload food image", type=["jpg", "jpeg", "png"])
+        
+        if uploaded_image:
+            image = Image.open(uploaded_image)
+            col1, col2 = st.columns([1, 2])
+            with col1:
+                st.image(image, width=200)
+            
+            with col2:
+                if st.button("🔍 Analyze with AI", use_container_width=True):
+                    nutrition = analyze_food_with_gemini("", image)
+                    st.session_state.current_analyzed_food = nutrition
+                    
+                    # Show results
+                    st.markdown(f"### {nutrition['food_name']}")
+                    cols = st.columns(4)
+                    with cols[0]:
+                        st.metric("Calories", nutrition['calories'])
+                    with cols[1]:
+                        st.metric("Protein", f"{nutrition['protein']}g")
+                    with cols[2]:
+                        st.metric("Carbs", f"{nutrition['carbs']}g")
+                    with cols[3]:
+                        st.metric("Fats", f"{nutrition['fats']}g")
+    
+    elif option == "🏷️ Label Scan":
+        st.markdown("### Upload food label")
+        uploaded_label = st.file_uploader("Upload label image", type=["jpg", "jpeg", "png"], key="label")
+        
+        if uploaded_label and st.button("📊 Extract Nutrition Facts", use_container_width=True):
+            with st.spinner("Analyzing label..."):
+                time.sleep(1)
+                nutrition = get_fallback_nutrition("nutrition label")
+                st.session_state.current_analyzed_food = nutrition
+                
+                st.markdown(f"### {nutrition['food_name']}")
+                cols = st.columns(4)
+                with cols[0]:
+                    st.metric("Calories", nutrition['calories'])
+                with cols[1]:
+                    st.metric("Protein", f"{nutrition['protein']}g")
+                with cols[2]:
+                    st.metric("Carbs", f"{nutrition['carbs']}g")
+                with cols[3]:
+                    st.metric("Fats", f"{nutrition['fats']}g")
+    
+    else:  # Manual Entry
+        st.markdown("### Enter food details")
+        food_input = st.text_input("Food name", placeholder="e.g., Masala Dosa, Apple, Pizza...")
+        
+        # Quick log buttons
+        st.markdown("**Quick log common foods:**")
+        cols = st.columns(4)
+        quick_foods = ["Banana", "Apple", "Egg", "Rice"]
+        for idx, food in enumerate(quick_foods):
+            with cols[idx]:
+                if st.button(f"🍎 {food}", use_container_width=True):
+                    nutrition = get_fallback_nutrition(food.lower())
+                    if save_food_to_session(nutrition):
+                        st.session_state.page = "dashboard"
+                        st.rerun()
+        
+        if food_input and st.button("🔍 Analyze with AI", use_container_width=True):
+            nutrition = analyze_food_with_gemini(food_input)
+            st.session_state.current_analyzed_food = nutrition
+            
+            st.markdown(f"### {nutrition['food_name']}")
+            cols = st.columns(4)
+            with cols[0]:
+                st.metric("Calories", nutrition['calories'])
+            with cols[1]:
+                st.metric("Protein", f"{nutrition['protein']}g")
+            with cols[2]:
+                st.metric("Carbs", f"{nutrition['carbs']}g")
+            with cols[3]:
+                st.metric("Fats", f"{nutrition['fats']}g")
+    
+    # Save Section
+    if st.session_state.current_analyzed_food:
+        st.markdown("---")
+        st.markdown("### Save Food")
+        
+        portion = st.select_slider("Portion size:", ["Small", "Medium", "Large"], value="Medium")
+        multiplier = {"Small": 0.7, "Medium": 1.0, "Large": 1.5}
+        
+        nutrition = st.session_state.current_analyzed_food.copy()
+        for key in ['calories', 'protein', 'carbs', 'fats']:
+            nutrition[key] = int(nutrition[key] * multiplier[portion])
+        
+        if st.button("💾 Save to Log", use_container_width=True, type="primary"):
+            if save_food_to_session(nutrition):
+                st.session_state.current_analyzed_food = None
+                st.session_state.page = "dashboard"
+                st.rerun()
+
+def render_exercise():
+    """React Exercise Page"""
+    st.markdown("# 🏋️ Exercise Tracker")
+    
+    if st.button("← Back to Dashboard"):
+        st.session_state.page = "dashboard"
+        st.rerun()
+    
+    if st.session_state.daily_totals['calories'] > 0:
+        st.info(f"Today's calories: **{st.session_state.daily_totals['calories']}**")
+        
+        # Exercise Suggestions
+        st.markdown("### 💡 Exercise Suggestions")
+        exercises = get_exercise_suggestions(st.session_state.daily_totals['calories'])
+        
+        for ex in exercises:
+            col1, col2, col3 = st.columns([3, 1, 1])
+            with col1:
+                st.write(f"**{ex['name']}**")
+            with col2:
+                st.write(f"{ex['duration']} min")
+            with col3:
+                if st.button("✅ Log", key=f"log_{ex['name']}"):
+                    exercise_data = {
+                        "name": ex['name'],
+                        "duration": ex['duration'],
+                        "calories_burned": ex['duration'] * ex['calories_per_min'],
+                        "time": datetime.now().strftime("%H:%M"),
+                        "date": datetime.now().strftime("%Y-%m-%d")
+                    }
+                    if save_exercise_to_session(exercise_data):
+                        st.success("Exercise logged!")
+                        time.sleep(1)
+                        st.rerun()
+    
+    # Custom Exercise
+    st.markdown("---")
+    st.markdown("### 🎯 Custom Exercise")
+    
+    col1, col2 = st.columns(2)
+    with col1:
+        exercise_type = st.selectbox("Type", ["Running", "Walking", "Cycling", "Gym", "Yoga", "Swimming"])
+        duration = st.slider("Duration (min)", 5, 180, 30)
+    
+    with col2:
+        intensity = st.select_slider("Intensity", ["Light", "Moderate", "High", "Very High"])
+        intensity_mult = {"Light": 5, "Moderate": 8, "High": 12, "Very High": 15}
+        calories = duration * intensity_mult[intensity]
+        st.metric("Calories Burned", calories)
+    
+    if st.button("💾 Log Custom Exercise", use_container_width=True, type="primary"):
+        exercise_data = {
+            "name": exercise_type,
+            "duration": duration,
+            "intensity": intensity,
+            "calories_burned": calories,
+            "time": datetime.now().strftime("%H:%M"),
+            "date": datetime.now().strftime("%Y-%m-%d")
+        }
+        if save_exercise_to_session(exercise_data):
+            st.success("Exercise logged!")
+            time.sleep(1)
+            st.rerun()
+
+def render_recommendations():
+    """React Recommendations Page"""
+    st.markdown("# 🥗 Meal Recommendations")
+    
+    if st.button("← Back to Dashboard"):
+        st.session_state.page = "dashboard"
+        st.rerun()
+    
+    # Diet Preference
+    st.markdown("### 🥗 Your Diet Preference")
+    diet = st.radio("Select:", ["Vegetarian", "Non-Vegetarian", "Eggetarian"], 
+                   horizontal=True, index=0)
+    
+    # Meal Time
+    st.markdown("### 🕐 Meal Time")
+    meal_time = st.radio("", ["Breakfast", "Lunch", "Dinner", "Snack"], horizontal=True)
+    
+    # Recommendations
+    st.markdown(f"### 🍽️ {meal_time} Suggestions")
+    suggestions = get_meal_suggestions(meal_time, diet)
+    
+    for i, suggestion in enumerate(suggestions):
+        col1, col2 = st.columns([4, 1])
+        with col1:
+            st.markdown(f"""
+            <div class="modern-card">
+                <strong>{suggestion}</strong><br>
+                <small style="color: var(--text-light);">Perfect for your {diet} diet</small>
+            </div>
+            """, unsafe_allow_html=True)
+        
+        with col2:
+            if st.button(f"Add #{i+1}", key=f"add_{i}"):
+                # Parse calories from suggestion
+                import re
+                cal_match = re.search(r'\((\d+)', suggestion)
+                calories = int(cal_match.group(1)) if cal_match else 300
+                protein = int(calories * 0.15)
+                
+                food_data = {
+                    "food_name": suggestion.split(" (")[0],
+                    "calories": calories,
+                    "protein": protein,
+                    "carbs": int(calories * 0.5),
+                    "fats": int(calories * 0.25),
+                    "insight": f"Recommended {meal_time}"
+                }
+                
+                if save_food_to_session(food_data):
+                    st.success("Meal added to log!")
+                    time.sleep(1)
+                    st.rerun()
+
+def render_profile():
+    """React Profile Page"""
+    st.markdown("# 👤 Profile")
+    
+    if st.button("← Back to Dashboard"):
+        st.session_state.page = "dashboard"
+        st.rerun()
     
     if st.session_state.user is None:
-        name = st.text_input("Your Name", value=" ")
-        age = st.number_input("Age", min_value=1, max_value=100, value=21, step=1)
-        gender = st.selectbox("Gender", ["Male", "Female", "Other"])
-        activity_level = st.select_slider(
-            "Activity Level",
-            options=["sedentary", "light", "moderate", "active", "very active"],
-            value="moderate"
-        )
+        st.info("Create your profile")
         
-        if age and gender:
-            calorie_target = calculate_calorie_target(age, gender, activity_level)
-            protein_target = calculate_protein_target(age, gender, calorie_target)
-            exercise_target = calculate_exercise_target(age)
+        with st.form("profile_form"):
+            name = st.text_input("Your Name")
+            age = st.number_input("Age", 1, 100, 25)
+            gender = st.selectbox("Gender", ["Male", "Female", "Other"])
+            activity = st.select_slider("Activity", 
+                                       ["Sedentary", "Light", "Moderate", "Active", "Very Active"],
+                                       value="Moderate")
             
-            st.markdown("### Your Recommended Targets:")
-            col1, col2, col3 = st.columns(3)
-            with col1:
-                st.metric("Calories", f"{calorie_target}")
-            with col2:
-                st.metric("Protein", f"{protein_target}g")
-            with col3:
-                st.metric("Exercise", f"{exercise_target} min")
-        
-        col1, col2 = st.columns(2)
-        with col1:
-            if st.button("Create Profile", type="primary", use_container_width=True):
+            if st.form_submit_button("Create Profile", type="primary"):
                 if name:
-                    calorie_target = calculate_calorie_target(age, gender, activity_level)
+                    calorie_target = calculate_calorie_target(age, gender.lower(), activity.lower())
                     protein_target = calculate_protein_target(age, gender, calorie_target)
-                    exercise_target = calculate_exercise_target(age)
                     
                     st.session_state.user = {
                         'name': name,
                         'age': age,
                         'gender': gender,
-                        'activity_level': activity_level,
-                        'joined': datetime.now().strftime("%Y-%m-%d")
+                        'activity_level': activity.lower()
                     }
                     
                     st.session_state.goals = {
@@ -734,648 +923,101 @@ with st.sidebar:
                         'protein': protein_target,
                         'carbs': int(calorie_target * 0.5 / 4),
                         'fats': int(calorie_target * 0.25 / 9),
-                        'exercise_minutes': exercise_target
+                        'exercise_minutes': 30
                     }
                     
-                    st.success(f"Welcome {name}! 🎉")
+                    st.success(f"Welcome {name}!")
+                    time.sleep(1)
                     st.rerun()
-                else:
-                    st.error("Please enter your name")
-        
-        with col2:
-            if st.button("Demo Mode", use_container_width=True):
-                st.session_state.user = {
-                    'name': "Demo User",
-                    'age': 25,
-                    'gender': "Male",
-                    'activity_level': "moderate",
-                    'joined': datetime.now().strftime("%Y-%m-%d")
-                }
-                st.rerun()
+    
     else:
-        st.success(f"Welcome, {st.session_state.user['name']}!")
-        st.write(f"Age: {st.session_state.user['age']}")
-        st.write(f"Gender: {st.session_state.user['gender']}")
-        
-        if st.button("Logout", type="secondary"):
-            st.session_state.user = None
-            st.session_state.food_logs = []
-            st.session_state.exercise_logs = []
-            st.session_state.daily_totals = {'calories': 0, 'protein': 0, 'carbs': 0, 'fats': 0, 'calories_burned': 0, 'water': 0}
-            st.rerun()
-    
-    st.divider()
-    st.markdown("## 🎯 Daily Goals")
-    
-    calories_goal = st.slider("Calories Goal", 1000, 3000, st.session_state.goals['calories'], 100)
-    protein_goal = st.slider("Protein Goal (g)", 30, 150, st.session_state.goals['protein'], 5)
-    exercise_goal = st.slider("Exercise Goal (min)", 0, 120, st.session_state.goals['exercise_minutes'], 5)
-    
-    if st.button("Update Goals", key="update_goals"):
-        st.session_state.goals['calories'] = calories_goal
-        st.session_state.goals['protein'] = protein_goal
-        st.session_state.goals['exercise_minutes'] = exercise_goal
-        st.success("Goals updated! 💪🏼")
-        time.sleep(1)
-        st.rerun()
-    
-    st.divider()
-    st.markdown("## 🥗 Diet Preference")
-    
-    diet_options = ["All", "Vegetarian", "Non-Vegetarian", "Eggetarian"]
-    
-    for diet in diet_options:
-        is_active = (st.session_state.diet_preference == diet)
-        if st.button(
-            diet,
-            key=f"diet_{diet}",
-            type="primary" if is_active else "secondary",
-            use_container_width=True
-        ):
-            st.session_state.diet_preference = diet
-            st.rerun()
-    
-    st.info(f"**Selected:** {st.session_state.diet_preference}")
-    
-    st.divider()
-    st.markdown("## 💧 Water Intake")
-    
-    water_col1, water_col2 = st.columns(2)
-    with water_col1:
-        current_water = st.session_state.daily_totals.get('water', 0)
-        water_percent = min(100, (current_water / 2000) * 100)
-        st.metric("Today's Water", f"{current_water}ml", f"{water_percent:.0f}%")
-    
-    with water_col2:
-        water_to_add = st.selectbox("Add water", [250, 500, 750, 1000], index=0)
-        if st.button("💧 Add Water"):
-            st.session_state.water_intake += water_to_add
-            st.session_state.daily_totals['water'] = st.session_state.water_intake
-            st.success(f"Added {water_to_add}ml water!")
-            time.sleep(0.5)
-            st.rerun()
-
-# ========== MAIN APP ==========
-if st.session_state.user is None:
-    st.markdown('<div class="nutri-card">', unsafe_allow_html=True)
-    st.markdown("## Welcome to NutriMind!")
-    st.markdown("""
-    **Your AI-powered nutrition assistant that helps you:**
-    
-    - 📸 **Scan food** with AI analysis
-    - 📊 **Track nutrition** in real-time
-    - 🏃 **Calculate exercise** needed
-    - 🥗 **Get personalized meal recommendations**
-    
-    *Create a profile or use Demo Mode to get started!*
-    """)
-    st.markdown('</div>', unsafe_allow_html=True)
-    
-    col1, col2, col3 = st.columns(3)
-    with col1:
-        st.info("**AI Food Scanner**\n\nUpload food photos for instant nutrition analysis.")
-    
-    with col2:
-        st.info("**Smart Tracking**\n\nTrack your food intake and exercise with detailed analytics.")
-    
-    with col3:
-        st.info("**Personalized Recommendations**\n\nGet meal suggestions based on your diet preference.")
-    
-else:
-    # Show success message if food was saved
-    if st.session_state.show_success:
-        st.markdown(f'<div class="success-toast">{st.session_state.success_message}</div>', unsafe_allow_html=True)
-        st.session_state.show_success = False
-    
-    st.markdown(f"## 👋🏼 Welcome, {st.session_state.user['name']}!")
-    
-    # Create tabs
-    tab1, tab2, tab3, tab4 = st.tabs(["📊 Dashboard", "📝 Log Food", "🏋🏽‍♀️ Exercise", "🥗 Recommendations"])
-    
-    with tab1:
-        # ========== DASHBOARD ==========
-        st.header("Your Nutrition Dashboard")
-        
-        col1, col2, col3, col4, col5, col6 = st.columns(6)
-        
-        with col1:
-            cal_percent = min(100, (st.session_state.daily_totals['calories'] / st.session_state.goals['calories']) * 100)
-            st.metric("🔥 Calories", f"{st.session_state.daily_totals['calories']}", f"{cal_percent:.0f}% of goal")
-        
-        with col2:
-            pro_percent = min(100, (st.session_state.daily_totals['protein'] / st.session_state.goals['protein']) * 100)
-            st.metric("💪🏽 Protein", f"{st.session_state.daily_totals['protein']}g", f"{pro_percent:.0f}% of goal")
-        
-        with col3:
-            st.metric("🌾 Carbs", f"{st.session_state.daily_totals['carbs']}g", f"{(st.session_state.daily_totals['carbs'] / 250 * 100):.0f}%")
-        
-        with col4:
-            st.metric("🥑 Fats", f"{st.session_state.daily_totals['fats']}g", f"{(st.session_state.daily_totals['fats'] / 65 * 100):.0f}%")
-        
-        with col5:
-            exercise_percent = min(100, (len(st.session_state.exercise_logs) * 30 / st.session_state.goals['exercise_minutes']) * 100)
-            st.metric("🏃🏽‍♀️ Exercise", f"{len(st.session_state.exercise_logs)} sessions", f"{exercise_percent:.0f}% of goal")
-        
-        with col6:
-            water_percent = min(100, (st.session_state.daily_totals.get('water', 0) / 2000) * 100)
-            st.metric("💧 Water", f"{st.session_state.daily_totals.get('water', 0)}ml", f"{water_percent:.0f}%")
-        
-        # Progress bars
-        st.markdown("### Progress Toward Goals")
-        
-        col_a, col_b = st.columns(2)
-        with col_a:
-            st.write("**Calories Progress**")
-            cal_progress = st.progress(0)
-            cal_progress.progress(cal_percent / 100)
-            
-            st.write("**Protein Progress**")
-            pro_progress = st.progress(0)
-            pro_progress.progress(pro_percent / 100)
-        
-        with col_b:
-            st.write("**Exercise Progress**")
-            ex_progress = st.progress(0)
-            ex_progress.progress(exercise_percent / 100)
-            
-            net_calories = st.session_state.daily_totals['calories'] - st.session_state.daily_totals['calories_burned']
-            st.metric("⚖️ Net Calories", f"{net_calories}")
-            
-            st.write("**Water Progress**")
-            water_progress = st.progress(0)
-            water_progress.progress(water_percent / 100)
-        
-        # Weekly chart
-        st.markdown("### 📈 Weekly Nutrition & Exercise Trend")
-        
-        dates = [(datetime.now() - timedelta(days=i)).strftime("%b %d") for i in range(6, -1, -1)]
-        
-        chart_data = pd.DataFrame({
-            "Date": dates,
-            "Calories": [st.session_state.daily_totals['calories'] + i * 100 for i in range(-3, 4)],
-            "Protein": [st.session_state.daily_totals['protein'] + i * 5 for i in range(-3, 4)],
-            "Exercise (min)": [i * 10 for i in range(3, 10)]
-        })
-        
-        fig = px.line(
-            chart_data, 
-            x="Date", 
-            y=["Calories", "Protein", "Exercise (min)"],
-            title="7-Day Health Trend",
-            labels={"value": "Amount", "variable": "Metric"},
-            color_discrete_map={"Calories": "#FF6B6B", "Protein": "#118AB2", "Exercise (min)": "#FFD166"}
-        )
-        st.plotly_chart(fig, use_container_width=True)
-        
-        # Recent logs
-        col_left, col_right = st.columns(2)
-        
-        with col_left:
-            if st.session_state.food_logs:
-                st.markdown("### Recent Food Logs")
-                recent_food_logs = st.session_state.food_logs[-3:]
-                for log in reversed(recent_food_logs):
-                    with st.container():
-                        st.markdown(f"""
-                        <div class="food-log-item">
-                            <strong>🍽️ {log.get('food_name', 'Food')}</strong><br>
-                            <small>🔥 {log.get('calories', 0)} cal | 💪🏼 {log.get('protein', 0)}g protein</small><br>
-                            <em>💡 {log.get('insight', '')}</em><br>
-                            <small style="color: #B3D9FF;">📅 {log.get('date', 'Today')} {log.get('time', '')}</small>
-                        </div>
-                        """, unsafe_allow_html=True)
-                st.info(f"**Total foods logged today:** {len([f for f in st.session_state.food_logs if f.get('date') == datetime.now().strftime('%Y-%m-%d')])}")
-            else:
-                st.info("No food logged yet. Go to 'Log Food' tab to add food!")
-        
-        with col_right:
-            if st.session_state.exercise_logs:
-                st.markdown("### Recent Exercise Logs")
-                recent_exercise_logs = st.session_state.exercise_logs[-3:]
-                for log in reversed(recent_exercise_logs):
-                    with st.container():
-                        st.markdown(f"""
-                        <div class="exercise-log-item">
-                            <strong>🏃🏽‍♀️ {log.get('name', 'Exercise')}</strong><br>
-                            <small>⏱️ {log.get('duration', 0)} min | 🔥 {log.get('calories_burned', 0)} cal burned</small><br>
-                            <em>📅 {log.get('date', 'Today')} {log.get('time', '')}</em>
-                        </div>
-                        """, unsafe_allow_html=True)
-            else:
-                st.info("No exercise logged yet. Go to 'Exercise' tab to add exercise!")
-    
-    with tab2:
-        # ========== LOG FOOD ==========
-        st.header("Log Your Food Intake")
-        
-        st.markdown("### Choose How to Log Food:")
-        
-        scan_option = st.radio(
-            "Select scanning method:",
-            ["📷 Upload Food Image", "🏷️ Upload Food Label", "📝 Manual Food Entry"],
-            horizontal=True
-        )
-        
-        if scan_option == "📷 Upload Food Image":
-            st.markdown('<div class="scan-option">', unsafe_allow_html=True)
-            st.markdown("#### 📸 Upload Food Photo")
-            st.markdown("Take a photo of your meal and get AI-powered nutrition analysis")
-            
-            uploaded_image = st.file_uploader(
-                "Upload food image (JPG, PNG)", 
-                type=["jpg", "jpeg", "png"],
-                label_visibility="collapsed"
-            )
-            
-            if uploaded_image is not None:
-                image = Image.open(uploaded_image)
-                col1, col2 = st.columns([1, 2])
-                with col1:
-                    st.image(image, caption="Your Food Image", width=250)
-                with col2:
-                    st.markdown("**Image Details:**")
-                    st.write(f"Format: {image.format}")
-                    st.write(f"Size: {image.size[0]}x{image.size[1]} pixels")
-                    st.write(f"Mode: {image.mode}")
-                
-                if st.button("Analyze with AI 🔍", type="primary", use_container_width=True):
-                    # Use the PROPER food analysis function
-                    nutrition = analyze_food_with_gemini("uploaded food image", image)
-                    nutrition['scan_type'] = "Image"
-                    
-                    # Store for saving
-                    st.session_state.current_analyzed_food = nutrition
-                    
-                    st.markdown(f"### 🍽️ {nutrition['food_name']}")
-                    nutri_cols = st.columns(4)
-                    with nutri_cols[0]:
-                        st.metric("Calories", nutrition['calories'])
-                    with nutri_cols[1]:
-                        st.metric("Protein", f"{nutrition['protein']}g")
-                    with nutri_cols[2]:
-                        st.metric("Carbs", f"{nutrition['carbs']}g")
-                    with nutri_cols[3]:
-                        st.metric("Fats", f"{nutrition['fats']}g")
-                    
-                    st.info(f"💡 **Insight:** {nutrition['insight']}")
-            
-            # Save button
-            if st.session_state.current_analyzed_food:
-                st.markdown("### Adjust Portion Size")
-                portion = st.select_slider(
-                    "Select portion size:",
-                    options=["Small", "Medium", "Large", "Extra"],
-                    value="Medium"
-                )
-                
-                portion_multipliers = {
-                    "Small": 0.7,
-                    "Medium": 1.0,
-                    "Large": 1.5,
-                    "Extra": 2.0
-                }
-                
-                multiplier = portion_multipliers[portion]
-                adjusted_nutrition = st.session_state.current_analyzed_food.copy()
-                
-                for key in ['calories', 'protein', 'carbs', 'fats']:
-                    if key in adjusted_nutrition:
-                        adjusted_nutrition[key] = int(adjusted_nutrition[key] * multiplier)
-                
-                st.info(f"**{portion} Portion:** {adjusted_nutrition['calories']} calories, {adjusted_nutrition['protein']}g protein")
-                
-                if st.button("✅ Save This Food", key="save_image_food"):
-                    saved = save_food_to_session(adjusted_nutrition)
-                    if saved:
-                        st.balloons()
-                        st.session_state.current_analyzed_food = None
-                        st.rerun()
-            
-            st.markdown('</div>', unsafe_allow_html=True)
-        
-        elif scan_option == "🏷️ Upload Food Label":
-            st.markdown('<div class="scan-option">', unsafe_allow_html=True)
-            st.markdown("#### 🏷️ Upload Food Label")
-            st.markdown("Upload a photo of nutrition facts label for precise analysis")
-            
-            uploaded_label = st.file_uploader(
-                "Upload label image (JPG, PNG)", 
-                type=["jpg", "jpeg", "png"],
-                key="label_upload",
-                label_visibility="collapsed"
-            )
-            
-            if uploaded_label is not None:
-                label_image = Image.open(uploaded_label)
-                st.image(label_image, caption="Food Label", width=300)
-                
-                if st.button("Extract Nutrition Facts", type="primary"):
-                    with st.spinner("📊 Extracting nutrition facts from label..."):
-                        time.sleep(2)
-                        
-                        label_nutrition = analyze_food_with_gemini("nutrition label", label_image)
-                        label_nutrition['scan_type'] = "Label"
-                        
-                        st.session_state.current_analyzed_food = label_nutrition
-                        
-                        st.markdown(f"### 🏷️ {label_nutrition['food_name']}")
-                        nutri_cols = st.columns(4)
-                        with nutri_cols[0]:
-                            st.metric("Calories", label_nutrition['calories'])
-                        with nutri_cols[1]:
-                            st.metric("Protein", f"{label_nutrition['protein']}g")
-                        with nutri_cols[2]:
-                            st.metric("Carbs", f"{label_nutrition['carbs']}g")
-                        with nutri_cols[3]:
-                            st.metric("Fats", f"{label_nutrition['fats']}g")
-            
-            # Save button
-            if st.session_state.current_analyzed_food:
-                if st.button("✅ Save from Label", key="save_label_food"):
-                    saved = save_food_to_session(st.session_state.current_analyzed_food)
-                    if saved:
-                        st.balloons()
-                        st.session_state.current_analyzed_food = None
-                        st.rerun()
-            
-            st.markdown('</div>', unsafe_allow_html=True)
-        
-        else:  # Manual Food Entry
-            st.markdown('<div class="scan-option">', unsafe_allow_html=True)
-            st.markdown("#### 📝 Manual Food Entry")
-            st.markdown("Enter food details manually")
-            
-            food_input = st.text_input(
-                "Enter food name:",
-                placeholder="e.g., Masala Dosa, Butter Chicken, Apple, Chapati...",
-                key="manual_food_input"
-            )
-            
-            # Quick log buttons
-            st.markdown("### Quick Log Common Foods")
-            quick_foods = ["Banana", "Apple", "Chapati", "Rice Bowl", "Egg", "Milk", "Curd", "Poha"]
-            cols = st.columns(4)
-            
-            for idx, food in enumerate(quick_foods):
-                with cols[idx % 4]:
-                    if st.button(f"🍎 {food}", use_container_width=True):
-                        nutrition = get_fallback_nutrition(food.lower())
-                        nutrition['meal_time'] = "Snack"
-                        saved = save_food_to_session(nutrition)
-                        if saved:
-                            st.success(f"{food} logged!")
-                            time.sleep(0.5)
-                            st.rerun()
-            
-            if food_input:
-                if st.button("Analyze with AI 🔍", type="primary", use_container_width=True):
-                    with st.spinner(f"Analyzing {food_input}..."):
-                        # Use food analysis function
-                        nutrition = analyze_food_with_gemini(food_input)
-                        nutrition['scan_type'] = "Manual"
-                        
-                        st.session_state.current_analyzed_food = nutrition
-                        
-                        st.markdown(f"### 🍽️ {nutrition['food_name']}")
-                        nutri_cols = st.columns(4)
-                        with nutri_cols[0]:
-                            st.metric("Calories", nutrition['calories'])
-                        with nutri_cols[1]:
-                            st.metric("Protein", f"{nutrition['protein']}g")
-                        with nutri_cols[2]:
-                            st.metric("Carbs", f"{nutrition['carbs']}g")
-                        with nutri_cols[3]:
-                            st.metric("Fats", f"{nutrition['fats']}g")
-                        
-                        st.info(f"💡 **Insight:** {nutrition['insight']}")
-                
-                # Save button
-                if st.session_state.current_analyzed_food:
-                    st.markdown("### Adjust Portion Size")
-                    portion = st.select_slider(
-                        "Select portion size:",
-                        options=["Small", "Medium", "Large", "Extra"],
-                        value="Medium"
-                    )
-                    
-                    portion_multipliers = {
-                        "Small": 0.7,
-                        "Medium": 1.0,
-                        "Large": 1.5,
-                        "Extra": 2.0
-                    }
-                    
-                    multiplier = portion_multipliers[portion]
-                    adjusted_nutrition = st.session_state.current_analyzed_food.copy()
-                    
-                    for key in ['calories', 'protein', 'carbs', 'fats']:
-                        if key in adjusted_nutrition:
-                            adjusted_nutrition[key] = int(adjusted_nutrition[key] * multiplier)
-                    
-                    st.info(f"**{portion} Portion:** {adjusted_nutrition['calories']} calories, {adjusted_nutrition['protein']}g protein")
-                    
-                    if st.button("✅ Save This Food", key="save_manual_food"):
-                        saved = save_food_to_session(adjusted_nutrition)
-                        if saved:
-                            st.balloons()
-                            st.session_state.current_analyzed_food = None
-                            st.rerun()
-            
-            st.markdown('</div>', unsafe_allow_html=True)
-    
-    with tab3:
-        # ========== EXERCISE TRACKER ==========
-        st.header("Exercise Calculator & Tracker")
-        
-        if st.session_state.daily_totals['calories'] > 0:
-            st.info(f"Today you've consumed **{st.session_state.daily_totals['calories']} calories**. Here's how to burn them:")
-            
-            exercises = get_exercise_suggestions(st.session_state.daily_totals['calories'])
-            
-            for ex in exercises:
-                col1, col2, col3 = st.columns([3, 1, 1])
-                with col1:
-                    st.write(f"**{ex['name']}**")
-                with col2:
-                    st.write(f"{ex['duration']} min")
-                with col3:
-                    if st.button("✅ Log", key=f"log_ex_{ex['name']}"):
-                        exercise_log = {
-                            "name": ex['name'],
-                            "duration": ex['duration'],
-                            "calories_burned": ex['duration'] * ex['calories_per_min'],
-                            "time": datetime.now().strftime("%H:%M"),
-                            "date": datetime.now().strftime("%Y-%m-%d")
-                        }
-                        
-                        saved = save_exercise_to_session(exercise_log)
-                        if saved:
-                            st.success(f"✅ {ex['name']} logged!")
-                            st.rerun()
-            
-            st.divider()
-            
-            st.subheader("Log Custom Exercise")
-            col1, col2 = st.columns(2)
-            
-            with col1:
-                exercise_types = ["Running", "Walking", "Cycling", "Gym", "Yoga", "Swimming", "Dancing", "Other"]
-                custom_exercise = st.selectbox("Select exercise type", exercise_types)
-                if custom_exercise == "Other":
-                    custom_exercise = st.text_input("Enter exercise name")
-                
-                duration = st.slider("Duration (minutes)", 5, 180, 30, 5)
-            
-            with col2:
-                intensity = st.select_slider(
-                    "Intensity Level",
-                    options=["Light", "Moderate", "High", "Very High"]
-                )
-                
-                intensity_multiplier = {"Light": 5, "Moderate": 8, "High": 12, "Very High": 15}
-                calories_burned = duration * intensity_multiplier[intensity]
-                
-                st.metric("Estimated Calories Burned", f"{calories_burned}")
-                
-                if st.button("Log Custom Exercise", type="primary", use_container_width=True):
-                    exercise_log = {
-                        "name": custom_exercise,
-                        "duration": duration,
-                        "intensity": intensity,
-                        "calories_burned": calories_burned,
-                        "time": datetime.now().strftime("%H:%M"),
-                        "date": datetime.now().strftime("%Y-%m-%d")
-                    }
-                    
-                    saved = save_exercise_to_session(exercise_log)
-                    if saved:
-                        st.success(f"✅ {custom_exercise} logged for {duration} minutes!")
-                        st.balloons()
-                        st.rerun()
-        
-        else:
-            st.info("Log some food first to see exercise suggestions!")
-        
-        # Exercise history
-        st.markdown("---")
-        st.subheader("Today's Exercise History")
-        
-        if st.session_state.exercise_logs:
-            today_exercises = [ex for ex in st.session_state.exercise_logs 
-                              if ex.get('date') == datetime.now().strftime("%Y-%m-%d")]
-            
-            if today_exercises:
-                total_calories_burned = sum([ex.get('calories_burned', 0) for ex in today_exercises])
-                total_minutes = sum([ex.get('duration', 0) for ex in today_exercises])
-                
-                col1, col2 = st.columns(2)
-                with col1:
-                    st.metric("Total Calories Burned", f"{total_calories_burned}")
-                with col2:
-                    st.metric("Total Exercise Time", f"{total_minutes} min")
-                
-                for ex in today_exercises:
-                    with st.container():
-                        st.markdown(f"""
-                        <div class="exercise-log-item">
-                            <strong>🏃 {ex.get('name', 'Exercise')}</strong><br>
-                            <small>⏱️ {ex.get('duration', 0)} min | 🔥 {ex.get('calories_burned', 0)} cal burned</small><br>
-                            <em>⚡ Intensity: {ex.get('intensity', 'Moderate')} | 📅 {ex.get('time', '')}</em>
-                        </div>
-                        """, unsafe_allow_html=True)
-            else:
-                st.info("No exercises logged today yet.")
-        else:
-            st.info("No exercises logged yet. Start logging to see your progress!")
-    
-    with tab4:
-        # ========== RECOMMENDATIONS ==========
-        st.header("Personalized Meal Recommendations")
-        
-        st.markdown(f"### 🥗 Based on your diet preference: **{st.session_state.diet_preference}**")
-        
-        remaining_calories = st.session_state.goals['calories'] - st.session_state.daily_totals['calories']
-        remaining_protein = st.session_state.goals['protein'] - st.session_state.daily_totals['protein']
-        
+        # User Info
         col1, col2 = st.columns(2)
         with col1:
-            st.metric("Remaining Calories", f"{max(0, remaining_calories)}")
+            st.markdown("### Your Info")
+            st.write(f"**Name:** {st.session_state.user['name']}")
+            st.write(f"**Age:** {st.session_state.user['age']}")
+            st.write(f"**Gender:** {st.session_state.user['gender']}")
+            st.write(f"**Activity:** {st.session_state.user['activity_level'].title()}")
+        
         with col2:
-            st.metric("Remaining Protein", f"{max(0, remaining_protein)}g")
+            st.markdown("### Daily Goals")
+            for key, value in st.session_state.goals.items():
+                st.write(f"**{key.title()}:** {value}")
         
-        meal_time = st.selectbox("Select meal time:", ["Breakfast", "Lunch", "Dinner", "Snack"])
-        
-        suggestions = get_meal_suggestions(
-            meal_time, 
-            st.session_state.diet_preference, 
-            remaining_calories, 
-            remaining_protein
-        )
-        
-        st.markdown(f"### 🍽️ {meal_time} Suggestions:")
-        
-        for i, suggestion in enumerate(suggestions):
-            with st.container():
-                st.markdown(f"""
-                <div class="meal-suggestion-card">
-                    <strong>{suggestion}</strong><br>
-                    <small>Recommended based on your {st.session_state.diet_preference} diet</small>
-                </div>
-                """, unsafe_allow_html=True)
-                
-                if st.button(f"Quick Add to Today's Log", key=f"add_meal_{i}"):
-                    import re
-                    cal_match = re.search(r'\((\d+) cal', suggestion)
-                    protein_match = re.search(r', (\d+)g protein', suggestion)
-                    
-                    calories = int(cal_match.group(1)) if cal_match else 300
-                    protein = int(protein_match.group(1)) if protein_match else 15
-                    
-                    food_name = suggestion.split(" (")[0].replace("🍳 ", "").replace("🥚 ", "").replace("🍗 ", "").replace("🧀 ", "").replace("🥣 ", "").replace("🐟 ", "").replace("🥘 ", "").replace("🍚 ", "").replace("🥗 ", "").replace("🍛 ", "")
-                    
-                    food_data = {
-                        "food_name": food_name,
-                        "calories": calories,
-                        "protein": protein,
-                        "carbs": calories * 0.5 / 4,
-                        "fats": calories * 0.25 / 9,
-                        "insight": f"Recommended {meal_time} for {st.session_state.diet_preference} diet",
-                        "meal_time": meal_time
-                    }
-                    
-                    saved = save_food_to_session(food_data)
-                    if saved:
-                        st.success(f"✅ {food_name} added to your food log!")
-                        st.rerun()
-        
+        # Water Intake
         st.markdown("---")
+        st.markdown("### 💧 Water Intake")
+        water_cols = st.columns([2, 1, 1])
+        with water_cols[0]:
+            water = st.slider("Today's water (ml)", 0, 4000, st.session_state.daily_totals.get('water', 0), 250)
         
-        # Nutrition tips
-        st.subheader("💡 Personalized Nutrition Tips")
+        with water_cols[1]:
+            if st.button("Update"):
+                st.session_state.daily_totals['water'] = water
+                st.success("Water updated!")
+                time.sleep(0.5)
+                st.rerun()
         
-        if remaining_calories < 0:
-            st.warning("⚠️ You've exceeded your calorie goal for today! Consider lighter meals or extra exercise.")
-        elif remaining_calories < 300:
-            st.info("🍎 You have few calories left. Opt for light, nutrient-dense snacks.")
-        else:
-            st.success("🎯 You're on track! You still have room for a satisfying meal.")
-        
-        if remaining_protein < 0:
-            st.warning("⚠️ You've exceeded your protein goal. Great for muscle building!")
-        elif remaining_protein < 15:
-            st.info("💪 Add a protein-rich food to meet your daily target.")
-        else:
-            st.success("🏋🏽‍♀️ Good protein balance. Keep it up!")
+        with water_cols[2]:
+            if st.button("Logout", type="secondary"):
+                st.session_state.user = None
+                st.session_state.food_logs = []
+                st.session_state.exercise_logs = []
+                st.session_state.daily_totals = {k: 0 for k in st.session_state.daily_totals}
+                st.session_state.page = "landing"
+                st.rerun()
+
+# ========== SIDEBAR NAVIGATION (React-style) ==========
+with st.sidebar:
+    st.markdown("""
+    <div style="text-align: center; padding: 20px 0;">
+        <div style="font-size: 2rem; margin-bottom: 10px;">🥗</div>
+        <h2 style="margin: 0;">NutriMind</h2>
+        <p style="color: var(--text-light); margin: 5px 0 20px;">Scan • Track • Grow</p>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    # Navigation
+    pages = [
+        ("📊 Dashboard", "dashboard"),
+        ("📸 Log Food", "log_food"),
+        ("🏋️ Exercise", "exercise"),
+        ("🥗 Meals", "recommendations"),
+        ("👤 Profile", "profile")
+    ]
+    
+    for icon, page_key in pages:
+        if st.button(icon, key=page_key, use_container_width=True,
+                    type="primary" if st.session_state.page == page_key else "secondary"):
+            st.session_state.page = page_key
+            st.rerun()
+    
+    # User info if logged in
+    if st.session_state.user:
+        st.markdown("---")
+        st.markdown(f"**👋 {st.session_state.user['name']}**")
+        st.markdown(f"*Age: {st.session_state.user['age']}*")
+
+# ========== MAIN APP ROUTER ==========
+if st.session_state.page == "landing":
+    render_landing_page()
+elif st.session_state.page == "dashboard":
+    render_dashboard()
+elif st.session_state.page == "log_food":
+    render_log_food()
+elif st.session_state.page == "exercise":
+    render_exercise()
+elif st.session_state.page == "recommendations":
+    render_recommendations()
+elif st.session_state.page == "profile":
+    render_profile()
 
 # ========== FOOTER ==========
 st.markdown("---")
-st.markdown(
-    """
-    <div style="text-align: center; color: #00C9C9; padding: 20px;">
-        <p><strong>NutriMind</strong> | Scan.Track.Grow 🥗🧠🏃🏽‍♀️💪🏽</p>
-        <p><strong>Built for Google TechSprint</strong></p>
-        <p style="font-size: 0.9em;">Team euphoria</p>
-    </div>
-    """,
-    unsafe_allow_html=True
-)
+st.markdown("""
+<div style="text-align: center; color: var(--text-light); padding: 20px;">
+    <p><strong>NutriMind</strong> | Scan • Track • Grow 🥗🧠🏃💪</p>
+    <p><strong>Built for Google TechSprint</strong> | Team euphoria</p>
+</div>
+""", unsafe_allow_html=True)
