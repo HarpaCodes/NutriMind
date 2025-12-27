@@ -482,7 +482,7 @@ with st.sidebar:
     st.markdown("## 👤 User Profile")
     
     if st.session_state.user is None:
-        name = st.text_input("Your Name", value="Harshini")
+        name = st.text_input("Your Name", value=" ")
         age = st.number_input("Age", min_value=1, max_value=100, value=21, step=1)
         gender = st.selectbox("Gender", ["Male", "Female", "Other"])
         activity_level = st.select_slider(
