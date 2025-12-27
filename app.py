@@ -308,7 +308,7 @@ def analyze_food_with_gemini(food_input, image=None):
     """WINNING FIX: Food analysis with DIRECT API KEY - NO SECRETS NEEDED"""
     try:
         # ⭐⭐⭐ WINNING FIX - YOUR API KEY IS HERE DIRECTLY ⭐⭐⭐
-        api_key = "AIzaSyC-O7lQBS27JHP9zHaOCD20LmwzeW0QmwA"
+        api_key = "AIzaSyDkEQuc6t5bAyZASw-6heb5_YqX2TOMbNY"
         
         # Verify key is valid
         if not api_key or "AIzaSy" not in api_key:
@@ -1383,4 +1383,5 @@ st.markdown(
     """,
     unsafe_allow_html=True
 )
+
 
