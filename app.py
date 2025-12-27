@@ -1,4 +1,4 @@
-# app.py - NutriMind with SMART AI Detection (No API Needed)
+# app.py - NutriMind with PROPER Gemini AI 2.5 Flash Lite
 import streamlit as st
 import pandas as pd
 import plotly.express as px
@@ -10,6 +10,7 @@ import random
 import json
 import base64
 import requests
+import re
 
 # ========== CRITICAL: Initialize ALL session state at TOP ==========
 if 'app_initialized' not in st.session_state:
@@ -303,110 +304,179 @@ st.markdown("""
 st.markdown('<h1 class="main-header">NutriMind</h1>', unsafe_allow_html=True)
 st.markdown('<p class="slogan">Scan • Track • Grow</p>', unsafe_allow_html=True)
 
-# ========== SMART AI FOOD DETECTION (NO API NEEDED) ==========
+# ========== PROPER GEMINI AI FUNCTION ==========
 def analyze_food_with_gemini(food_input, image=None):
-    """SMART AI Food Detection - NO API KEY NEEDED - Works Offline"""
+    """PROPER Gemini AI Analysis - Get your API key from: https://makersuite.google.com/app/apikey"""
     
-    # Show AI thinking animation
+    # ⭐⭐⭐ GET YOUR API KEY FROM: https://makersuite.google.com/app/apikey ⭐⭐⭐
+    # ⭐⭐⭐ REPLACE THIS WITH YOUR ACTUAL API KEY ⭐⭐⭐
+    api_key = " AIzaSyDkEQuc6t5bAyZASw-6heb5_YqX2TOMbNY"
+    
+    # Show AI thinking message
     thinking_placeholder = st.empty()
     thinking_placeholder.markdown('<div class="ai-thinking">🤖 AI is analyzing your food... Please wait</div>', unsafe_allow_html=True)
     
-    # Simulate AI processing
-    time.sleep(2.5)
-    thinking_placeholder.empty()
-    
-    # SMART IMAGE ANALYSIS
-    if image:
-        # Get image properties
-        width, height = image.size
-        aspect_ratio = width / height
+    try:
+        # Check if API key is valid
+        if not api_key or "AIzaSy" not in api_key:
+            thinking_placeholder.empty()
+            st.error("❌ Invalid API key. Please get a new one from: https://makersuite.google.com/app/apikey")
+            return get_fallback_nutrition(food_input)
         
-        # Analyze based on image characteristics
-        if aspect_ratio > 1.5:  # Wide/Landscape
-            # Likely a full meal plate
-            food_options = [
-                {"food_name": "🍽️ Full Meal Plate", "calories": 450, "protein": 25, "carbs": 55, "fats": 15, "insight": "Complete balanced meal with protein, carbs and fats"},
-                {"food_name": "🍛 Rice & Curry Combo", "calories": 420, "protein": 22, "carbs": 60, "fats": 12, "insight": "Traditional Indian meal with spices"},
-                {"food_name": "🥘 Pasta Dish", "calories": 380, "protein": 18, "carbs": 52, "fats": 10, "insight": "Italian pasta with sauce and cheese"},
-                {"food_name": "🍱 Bento Box", "calories": 400, "protein": 28, "carbs": 45, "fats": 14, "insight": "Asian style compartmentalized meal"}
-            ]
-        elif aspect_ratio < 0.7:  # Tall/Portrait
-            # Likely a drink or vertical item
-            food_options = [
-                {"food_name": "🥤 Beverage/Smoothie", "calories": 220, "protein": 8, "carbs": 38, "fats": 4, "insight": "Refreshing drink with nutrients"},
-                {"food_name": "🥪 Sandwich/Wrap", "calories": 320, "protein": 19, "carbs": 42, "fats": 9, "insight": "Handheld meal with filling"},
-                {"food_name": "🍦 Ice Cream Cone", "calories": 280, "protein": 5, "carbs": 38, "fats": 12, "insight": "Sweet frozen dessert"},
-                {"food_name": "🥖 Baguette/Bread", "calories": 240, "protein": 9, "carbs": 48, "fats": 3, "insight": "Baked bread item"}
-            ]
-        else:  # Square-ish
-            # Likely single food item
-            food_options = [
-                {"food_name": "🍕 Pizza Slice", "calories": 285, "protein": 12, "carbs": 36, "fats": 10, "insight": "Contains carbs, protein and fats"},
-                {"food_name": "🍔 Burger", "calories": 354, "protein": 15, "carbs": 29, "fats": 20, "insight": "Fast food with moderate protein"},
-                {"food_name": "🍩 Donut/Pastry", "calories": 320, "protein": 4, "carbs": 45, "fats": 14, "insight": "Sweet baked item"},
-                {"food_name": "🥗 Salad Bowl", "calories": 180, "protein": 9, "carbs": 22, "fats": 7, "insight": "Healthy vegetable mix"}
-            ]
-        
-        # Pick one based on image characteristics
-        import random
-        seed_value = width + height + len(image.mode)
-        random.seed(seed_value)
-        nutrition = random.choice(food_options)
-        
-        # Add AI detection message
-        nutrition['food_name'] = f"📸 AI Detected: {nutrition['food_name']}"
-        
-    else:
-        # TEXT-BASED ANALYSIS
-        food_input_str = str(food_input).lower()
-        
-        # Enhanced food detection
-        if "pizza" in food_input_str:
-            nutrition = {"food_name": "🍕 Pizza", "calories": 285, "protein": 12, "carbs": 36, "fats": 10, "insight": "Contains carbs, protein and fats"}
-        elif "burger" in food_input_str:
-            nutrition = {"food_name": "🍔 Burger", "calories": 354, "protein": 15, "carbs": 29, "fats": 20, "insight": "Fast food with moderate protein"}
-        elif "salad" in food_input_str:
-            nutrition = {"food_name": "🥗 Salad", "calories": 150, "protein": 8, "carbs": 15, "fats": 6, "insight": "Healthy vegetable mix"}
-        elif "rice" in food_input_str:
-            nutrition = {"food_name": "🍚 Rice Dish", "calories": 240, "protein": 5, "carbs": 53, "fats": 0.5, "insight": "Simple carbohydrates for energy"}
-        elif "chicken" in food_input_str:
-            nutrition = {"food_name": "🍗 Chicken Dish", "calories": 250, "protein": 30, "carbs": 5, "fats": 12, "insight": "Lean protein for muscle building"}
-        elif "egg" in food_input_str:
-            nutrition = {"food_name": "🥚 Egg Dish", "calories": 155, "protein": 13, "carbs": 1, "fats": 11, "insight": "Complete protein with essential amino acids"}
-        elif "fruit" in food_input_str or "apple" in food_input_str or "banana" in food_input_str:
-            nutrition = {"food_name": "🍎 Fruit", "calories": 95, "protein": 0.5, "carbs": 25, "fats": 0.3, "insight": "Natural sugars with vitamins and fiber"}
-        elif "pasta" in food_input_str:
-            nutrition = {"food_name": "🍝 Pasta", "calories": 220, "protein": 8, "carbs": 43, "fats": 1, "insight": "Carb-rich Italian dish"}
-        elif "sandwich" in food_input_str:
-            nutrition = {"food_name": "🥪 Sandwich", "calories": 250, "protein": 8, "carbs": 40, "fats": 6, "insight": "Quick meal with vegetables"}
-        elif "smoothie" in food_input_str or "shake" in food_input_str:
-            nutrition = {"food_name": "🥤 Smoothie", "calories": 200, "protein": 8, "carbs": 30, "fats": 5, "insight": "Blended fruits with nutrients"}
-        elif "curry" in food_input_str:
-            nutrition = {"food_name": "🍛 Curry", "calories": 300, "protein": 15, "carbs": 25, "fats": 18, "insight": "Spiced dish with gravy"}
-        elif "dosa" in food_input_str or "idli" in food_input_str or "vada" in food_input_str:
-            nutrition = {"food_name": "🥘 South Indian Food", "calories": 200, "protein": 6, "carbs": 35, "fats": 5, "insight": "Traditional fermented food"}
-        elif "chapati" in food_input_str or "roti" in food_input_str:
-            nutrition = {"food_name": "🫓 Indian Bread", "calories": 70, "protein": 3, "carbs": 15, "fats": 0.4, "insight": "Whole wheat Indian flatbread"}
+        # Prepare the prompt
+        if image:
+            # Convert image to base64
+            buffered = io.BytesIO()
+            if image.mode != 'RGB':
+                image = image.convert('RGB')
+            image.save(buffered, format="JPEG", quality=90)
+            img_str = base64.b64encode(buffered.getvalue()).decode()
+            
+            prompt = """You are a nutrition expert. Analyze this food image and provide accurate information.
+            
+            IMPORTANT: Return ONLY a JSON object in this exact format:
+            {
+                "food_name": "Exact name of the food dish",
+                "calories": number,
+                "protein": number,
+                "carbs": number,
+                "fats": number,
+                "insight": "Brief nutritional insight"
+            }
+            
+            Rules:
+            1. Identify the specific food name (e.g., "Masala Dosa", "Butter Chicken", "Cheese Pizza")
+            2. Provide realistic nutrition values
+            3. Keep insight brief and helpful
+            4. Return ONLY the JSON, no other text"""
+            
+            payload = {
+                "contents": [{
+                    "parts": [
+                        {"text": prompt},
+                        {
+                            "inline_data": {
+                                "mime_type": "image/jpeg",
+                                "data": img_str
+                            }
+                        }
+                    ]
+                }],
+                "generationConfig": {
+                    "temperature": 0.1,
+                    "maxOutputTokens": 500,
+                }
+            }
         else:
-            # Use fallback database
-            nutrition = get_fallback_nutrition(food_input)
+            prompt = f"""Analyze this food: {food_input}
+            
+            Provide nutrition facts in this EXACT JSON format:
+            {{
+                "food_name": "Specific name of the food",
+                "calories": number,
+                "protein": number,
+                "carbs": number,
+                "fats": number,
+                "insight": "Brief nutritional insight"
+            }}
+            
+            IMPORTANT: Return ONLY the JSON object, no additional text."""
+            
+            payload = {
+                "contents": [{
+                    "parts": [{"text": prompt}]
+                }],
+                "generationConfig": {
+                    "temperature": 0.1,
+                    "maxOutputTokens": 500,
+                }
+            }
         
-        nutrition['food_name'] = f"🔍 AI Analyzed: {nutrition['food_name']}"
-    
-    # Show success message
-    st.success(f"✅ {nutrition['food_name']}")
-    
-    # Add metadata
-    if image:
-        nutrition['scan_type'] = "Image"
-        nutrition['image_size'] = f"{width}x{height}"
-    else:
-        nutrition['scan_type'] = "Text"
-    
-    return nutrition
+        # Make API request
+        response = requests.post(
+            f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key={api_key}",
+            json=payload,
+            headers={"Content-Type": "application/json"},
+            timeout=30
+        )
+        
+        thinking_placeholder.empty()
+        
+        if response.status_code == 200:
+            result = response.json()
+            
+            if "candidates" in result and len(result["candidates"]) > 0:
+                response_text = result["candidates"][0]["content"]["parts"][0]["text"]
+                
+                # Clean the response
+                response_text = response_text.strip()
+                
+                # Remove markdown code blocks
+                if response_text.startswith("```json"):
+                    response_text = response_text[7:]
+                if response_text.endswith("```"):
+                    response_text = response_text[:-3]
+                response_text = response_text.strip()
+                
+                # Extract JSON using regex
+                json_match = re.search(r'\{.*\}', response_text, re.DOTALL)
+                
+                if json_match:
+                    try:
+                        nutrition_data = json.loads(json_match.group())
+                        
+                        # Validate required fields
+                        if "food_name" in nutrition_data:
+                            # Ensure all fields exist
+                            required_fields = ["calories", "protein", "carbs", "fats", "insight"]
+                            for field in required_fields:
+                                if field not in nutrition_data:
+                                    if field == "insight":
+                                        nutrition_data[field] = "Nutrition information provided by AI analysis"
+                                    else:
+                                        nutrition_data[field] = 0
+                            
+                            # Convert to integers
+                            for field in ["calories", "protein", "carbs", "fats"]:
+                                try:
+                                    nutrition_data[field] = int(float(nutrition_data[field]))
+                                except:
+                                    nutrition_data[field] = 0
+                            
+                            st.success(f"✅ AI Detected: **{nutrition_data['food_name']}**")
+                            return nutrition_data
+                    except json.JSONDecodeError as e:
+                        st.warning("⚠️ Could not parse AI response. Using fallback.")
+        
+        # Handle API errors
+        if response.status_code == 403:
+            st.error("""
+            ❌ **API Error 403: Invalid API Key**
+            
+            Your API key is invalid or disabled. Please:
+            1. Get a NEW API key from: https://makersuite.google.com/app/apikey
+            2. Replace the api_key in line 87 of this code
+            3. Make sure "Generative Language API" is enabled at: https://console.cloud.google.com/apis/library
+            """)
+        elif response.status_code == 429:
+            st.error("❌ API quota exceeded. Try again in a few minutes.")
+        else:
+            st.warning(f"⚠️ API Error {response.status_code}. Using fallback database.")
+        
+        # Fallback to database
+        return get_fallback_nutrition(food_input)
+        
+    except requests.exceptions.Timeout:
+        thinking_placeholder.empty()
+        st.warning("⚠️ AI analysis timed out. Using fallback database.")
+        return get_fallback_nutrition(food_input)
+    except Exception as e:
+        thinking_placeholder.empty()
+        st.warning(f"⚠️ Error: {str(e)[:100]}. Using fallback.")
+        return get_fallback_nutrition(food_input)
 
 def get_fallback_nutrition(food_name):
-    """Comprehensive fallback nutrition database"""
+    """Fallback nutrition database when API fails"""
     food_db = {
         "dosa": {"food_name": "Masala Dosa", "calories": 200, "protein": 4, "carbs": 30, "fats": 6, "insight": "South Indian fermented crepe with potato filling"},
         "idli": {"food_name": "Idli", "calories": 60, "protein": 2, "carbs": 12, "fats": 0.5, "insight": "Steamed rice cake, easily digestible"},
@@ -473,7 +543,7 @@ def get_fallback_nutrition(food_name):
         if key in food_lower:
             return food_db[key]
     
-    # Check for specific terms
+    # Check for specific Indian food terms
     if any(term in food_lower for term in ["curry", "masala", "tikka", "korma"]):
         if "chicken" in food_lower:
             return food_db["chicken curry"]
@@ -929,7 +999,7 @@ else:
                     st.write(f"Mode: {image.mode}")
                 
                 if st.button("Analyze with AI 🔍", type="primary", use_container_width=True):
-                    # Use the SMART food analysis function
+                    # Use the PROPER food analysis function
                     nutrition = analyze_food_with_gemini("uploaded food image", image)
                     nutrition['scan_type'] = "Image"
                     
