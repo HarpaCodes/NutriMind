@@ -639,11 +639,13 @@ st.markdown('<p class="slogan">Scan • Track • Grow</p>', unsafe_allow_html=T
 def analyze_food_with_gemini(food_input, image=None):
     """PROPER Gemini AI Analysis"""
     
-    # =============================================
-    # ⚠️ IMPORTANT: Replace this with YOUR API key!
-    # Get it from: https://makersuite.google.com/app/apikey
-    # =============================================
-    api_key = "YOUR_API_KEY_HERE"  # ⬅️ REPLACE THIS WITH YOUR KEY
+    # SECURE: Get API key from Streamlit Secrets
+    try:
+        api_key = st.secrets["GEMINI_API_KEY"]
+    except:
+        # If secrets not available, show error
+        st.error("🔐 API key not configured. Please configure secrets.")
+        return get_fallback_nutrition(food_input)
     
     # Show AI thinking message
     thinking_placeholder = st.empty()
