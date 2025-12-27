@@ -303,27 +303,21 @@ st.markdown("""
 st.markdown('<h1 class="main-header">NutriMind</h1>', unsafe_allow_html=True)
 st.markdown('<p class="slogan">Scan • Track • Grow</p>', unsafe_allow_html=True)
 
-# ========== IMPROVED GEMINI AI FUNCTION ==========
+# ========== FIXED GEMINI AI FUNCTION WITH DIRECT API KEY ==========
 def analyze_food_with_gemini(food_input, image=None):
-    """Improved food analysis with better Gemini 2.5 Flash Lite API calls"""
+    """WINNING FIX: Food analysis with DIRECT API KEY - NO SECRETS NEEDED"""
     try:
-        # Try to use Gemini if API key is available
-        api_key = st.secrets.get("GEMINI_API_KEY", "")
-        if not api_key:
-            # Try environment variable as fallback
-            import os
-            api_key = os.environ.get("GEMINI_API_KEY", "")
+        # ⭐⭐⭐ WINNING FIX - YOUR API KEY IS HERE DIRECTLY ⭐⭐⭐
+        api_key = "AIzaSyC-O7lQBS27JHP9zHaOCD20LmwzeW0QmwA"
         
-        if not api_key:
-            st.warning("⚠️ Gemini API key not found. Using fallback database.")
+        # Verify key is valid
+        if not api_key or "AIzaSy" not in api_key:
+            st.error("❌ API Key not properly configured!")
             return get_fallback_nutrition(food_input)
         
         # Show AI thinking message
         thinking_placeholder = st.empty()
         thinking_placeholder.markdown('<div class="ai-thinking">🤖 AI is analyzing your food image... Please wait</div>', unsafe_allow_html=True)
-        
-        # Use requests to call Gemini API directly
-        import requests
         
         # Prepare the prompt
         if image:
@@ -442,7 +436,6 @@ def analyze_food_with_gemini(food_input, image=None):
                             st.warning("⚠️ AI response missing some fields. Using fallback.")
                     except json.JSONDecodeError as e:
                         st.warning(f"⚠️ Could not parse AI response as JSON. Using fallback.")
-                        st.write(f"AI Response preview: {response_text[:200]}...")
             
             # If API response is not successful
             st.warning(f"⚠️ API response not as expected. Status: {response.status_code}")
@@ -1010,6 +1003,9 @@ else:
                     # Store for saving
                     st.session_state.current_analyzed_food = nutrition
                     
+                    # The success message is already shown inside analyze_food_with_gemini function
+                    # So no need to show it again here
+                    
                     st.markdown(f"### 🍽️ {nutrition['food_name']}")
                     nutri_cols = st.columns(4)
                     with nutri_cols[0]:
@@ -1082,7 +1078,7 @@ else:
                         
                         st.session_state.current_analyzed_food = label_nutrition
                         
-                        st.success(f"✅ Product Detected: **{label_nutrition['food_name']}**")
+                        # Success message shown inside function
                         
                         st.markdown(f"### 🏷️ {label_nutrition['food_name']}")
                         nutri_cols = st.columns(4)
@@ -1142,7 +1138,7 @@ else:
                         
                         st.session_state.current_analyzed_food = nutrition
                         
-                        st.success(f"✅ {nutrition['food_name']} analyzed!")
+                        # Success message shown inside function
                         
                         st.markdown(f"### 🍽️ {nutrition['food_name']}")
                         nutri_cols = st.columns(4)
