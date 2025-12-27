@@ -1,4 +1,3 @@
-
 # app.py - NutriMind with PROPER Gemini AI 2.5 Flash Lite
 import streamlit as st
 import pandas as pd
