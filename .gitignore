@@ -1,11 +1,4 @@
-# Streamlit secrets
 .streamlit/
-
-# Python cache
-__pycache__/
 *.pyc
-
-# API keys and sensitive data
-*.env
-.env.local
-secrets.json
+__pycache__/
+.env
