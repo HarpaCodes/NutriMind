@@ -50,16 +50,7 @@ st.set_page_config(
 # Custom CSS for beautiful green theme
 st.markdown("""
 <style>
-    /* ========== FIX BLACK TOP BAR ========== */
-    #MainMenu {visibility: hidden;}
-    footer {visibility: hidden;}
-    header {visibility: hidden;}
-    
-    .stApp {
-        margin-top: -80px;
-    }
-    
-    /* ========== Beautiful Green Theme Variables ========== */
+    /* Beautiful Green Theme Variables */
     :root {
         --green-primary: #10B981;
         --green-secondary: #059669;
