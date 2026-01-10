@@ -4,8 +4,8 @@
 **Built for Google TechSprint 2025 | Team euphoria**
 
 ## 🎯 Live Demo
-> **Live App:** [Click here to use NutriMind](https://nutrimind.streamlit.app)  
-> **Video Demo:** [Watch 3-minute demo](YOUR_VIDEO_LINK_HERE)
+> **Live App:** [Click here to use NutriMind](https://nutrimind7.streamlit.app)  
+> **Video Demo:** [Watch 3-minute demo](975872)
 
 ## ✨ Features
 - **AI Food Scanner** - Uses Google Gemini to analyze food images
