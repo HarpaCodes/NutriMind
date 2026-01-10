@@ -5,7 +5,7 @@
 
 ## 🎯 Live Demo
 > **Live App:** [Click here to use NutriMind](https://nutrimind7.streamlit.app)  
-> **Video Demo:** [Watch 3-minute demo](975872)
+> **Video Demo:** [Watch 3-minute demo](https://youtu.be/AebDsPpniRE?si=DIo93W6YqDFfgweG)
 
 ## ✨ Features
 - **AI Food Scanner** - Uses Google Gemini to analyze food images
